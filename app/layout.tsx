@@ -24,6 +24,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: BRAND.url,
   },
+  icons: {
+    icon: { url: "/favicon.svg", type: "image/svg+xml" },
+  },
   openGraph: {
     title: "Mr. Bottom Line — Product Builder. Systems Thinker. Capital Allocator.",
     description:
@@ -60,6 +63,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${playfair.variable} ${inter.variable}`}>
+      <head>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+      </head>
       <body>{children}</body>
     </html>
   );

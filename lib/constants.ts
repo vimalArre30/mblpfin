@@ -16,10 +16,10 @@ export const BRAND = {
 export const LINKS = {
   youtube: "https://www.youtube.com/@mrbottomline",
   substack: "https://mrbottomline.substack.com",
-  arreVoice: "https://arevoice.com",
-  sereneWindsor: "https://sailinventure.com",
+  arreVoice: "https://arrevoice.com",
+  sereneWindsor: "https://sserenewindsor.com",
   contactEmail: "hello@mrbottomline.club",
-  linkedin: "https://linkedin.com/in/vimal",
+  linkedin: "https://www.linkedin.com/in/rvimalkumar/",
 };
 
 // --------------- NAV ---------------
@@ -78,7 +78,7 @@ export const PURSUITS = {
       tag: "Chief of Product · 5+ Years",
       description:
         "ARRÊ Voice is India's short-form social audio app — a platform where anyone can create, share, and discover 30-second Voicepods. I oversee product and engineering operations and have been part of building this from the ground up for over five years.",
-      cta: { label: "Visit ARRÊ Voice →", href: "https://arevoice.com" },
+      cta: { label: "Visit ARRÊ Voice →", href: "https://arrevoice.com" },
       icon: "🎙",
     },
     {
@@ -128,12 +128,12 @@ export const YOUTUBE_FEATURE = {
   cta: { label: "Subscribe to the Channel →", href: "https://www.youtube.com/@mrbottomline" },
   videos: [
     {
-      id: "dQw4w9WgXcQ", // Replace with actual YouTube video ID
-      description: "Why most founders confuse activity for traction — and what to measure instead.",
+      id: "eRNli9Knp_c", // Replace with actual YouTube video ID
+      description: "The Hardest part of getting started is getting started.",
     },
     {
-      id: "dQw4w9WgXcQ", // Replace with actual YouTube video ID
-      description: "The quiet mechanics of recurring revenue: how durable businesses actually compound.",
+      id: "noVvKuYJYQA", // Replace with actual YouTube video ID
+      description: "My first 8.3 INR crores.",
     },
   ],
 };
@@ -233,7 +233,7 @@ export const FOOTER = {
   social: [
     { label: "YouTube", href: "https://www.youtube.com/@mrbottomline" },
     { label: "Substack", href: "https://mrbottomline.substack.com" },
-    { label: "LinkedIn", href: "https://linkedin.com/in/vimal" },
+    { label: "LinkedIn", href: "https://www.linkedin.com/in/rvimalkumar/" },
   ],
   copyright: "© 2025 Mr. Bottom Line · MrBottomline.club",
 };
