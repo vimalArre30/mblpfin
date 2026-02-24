@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-white text-body font-inter antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-playfair text-ink;
+  }
+}
+
+@layer utilities {
+  .bg-navy\/8 {
+    background-color: rgb(27 46 94 / 0.08);
+  }
+}
