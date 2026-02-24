@@ -9,7 +9,7 @@ export const BRAND = {
   tagline: "Product Builder. Systems Thinker. Capital Allocator.",
   description:
     "Vimal is a product builder turned capital allocator. Chief of Product at ARRÊ Voice. Building Serene Windsor, Mr. Bottom Line on YouTube, and backing high-agency founders.",
-  url: "https://mrbottomline.club",
+  url: "https://www.mrbottomline.club",
 };
 
 // --------------- LINKS ---------------

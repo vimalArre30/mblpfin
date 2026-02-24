@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/images/og-image.png",
+        url: "https://www.mrbottomline.club/og-image.png",
         width: 1200,
         height: 630,
         alt: "Mr. Bottom Line",
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     title: "Mr. Bottom Line — Product Builder. Systems Thinker. Capital Allocator.",
     description:
       "Vimal is a product builder turned capital allocator. Chief of Product at ARRÊ Voice. Building Serene Windsor, Mr. Bottom Line on YouTube, and backing high-agency founders.",
-    images: ["/images/og-image.png"],
+    images: ["https://www.mrbottomline.club/og-image.png"],
   },
   robots: {
     index: true,
@@ -65,6 +65,7 @@ export default function RootLayout({
     <html lang="en" className={`${playfair.variable} ${inter.variable}`}>
       <head>
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="canonical" href="https://www.mrbottomline.club" />
       </head>
       <body>{children}</body>
     </html>
