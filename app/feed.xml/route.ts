@@ -18,7 +18,7 @@ export async function GET() {
 
   const items = posts
     .map((post) => {
-      const url = `${BRAND.url}/blog/${post.slug}`;
+      const url = `${BRAND.url}/writing/${post.slug}`;
       // pubDate must be RFC 822 format — toUTCString() produces exactly that.
       const pubDate = new Date(post.date).toUTCString();
 

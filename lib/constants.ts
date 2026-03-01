@@ -27,7 +27,7 @@ export const NAV_LINKS = [
   { label: "About", href: "#about" },
   { label: "Pursuits", href: "#pursuits" },
   { label: "Thinking", href: "#thinking" },
-  { label: "Writing", href: "/blog" },
+  { label: "Writing", href: "/writing" },
   { label: "Collaborate", href: "#collaborate" },
   { label: "Community", href: "#community" },
 ];
@@ -197,6 +197,15 @@ export const THINKING = {
       href: "https://mrbottomline.substack.com",
     },
   ],
+};
+
+// --------------- YOUTUBE SERIES ---------------
+export const YOUTUBE_SERIES = {
+  sectionLabel: "ON YOUTUBE",
+  heading: "On YouTube",
+  subheading: "The Serene Windsor Farmstay Series",
+  body: "Building a farmstay from scratch — the real numbers, the real mistakes, and the slow work of making something that lasts. New episodes on the MrBottomLine YouTube channel.",
+  cta: { label: "Watch the Series →", href: "https://www.youtube.com/@MrBottomLine" },
 };
 
 // --------------- COLLABORATE ---------------

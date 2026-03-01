@@ -22,6 +22,8 @@ const CATEGORY_ORDER: Category[] = [
   "Philosophy",
   "Lifestyle",
   "Technology",
+  "Entrepreneurship",
+  "Farmstay",
 ];
 
 type FilterValue = "All" | Category;
@@ -72,7 +74,7 @@ interface PostCardProps {
 function PostCard({ post }: PostCardProps) {
   return (
     <Link
-      href={`/blog/${post.slug}`}
+      href={`/writing/${post.slug}`}
       className="group flex flex-col bg-white rounded-2xl p-8 border border-border shadow-sm hover:shadow-md transition-shadow duration-200"
     >
       {/* Category + read time */}

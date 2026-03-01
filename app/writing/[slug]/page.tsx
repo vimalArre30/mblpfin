@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!post) return {};
 
-  const url = `${BRAND.url}/blog/${post.slug}`;
+  const url = `${BRAND.url}/writing/${post.slug}`;
 
   return {
     title: `${post.title} | Mr. Bottom Line`,
@@ -101,7 +101,7 @@ function getRelatedPosts(allPosts: PostMeta[], currentSlug: string, category: st
 function RelatedPostCard({ post }: { post: PostMeta }) {
   return (
     <Link
-      href={`/blog/${post.slug}`}
+      href={`/writing/${post.slug}`}
       className="group flex flex-col bg-white rounded-2xl p-7 border border-border shadow-sm hover:shadow-md transition-shadow duration-200"
     >
       <div className="flex items-center justify-between mb-3">
@@ -143,7 +143,7 @@ export default async function PostPage({ params }: PageProps) {
     headline: post.title,
     description: post.excerpt,
     datePublished: post.date,
-    url: `${BRAND.url}/blog/${post.slug}`,
+    url: `${BRAND.url}/writing/${post.slug}`,
     author: {
       "@type": "Person",
       name: "Vimal",
@@ -172,7 +172,7 @@ export default async function PostPage({ params }: PageProps) {
 
           {/* ── Back link ── */}
           <Link
-            href="/blog"
+            href="/writing"
             className="inline-flex items-center gap-2 font-inter text-sm font-medium text-body/60 hover:text-navy transition-colors duration-150 mb-10 group"
           >
             <span className="transition-transform duration-150 group-hover:-translate-x-0.5">←</span>
@@ -222,7 +222,7 @@ export default async function PostPage({ params }: PageProps) {
           {/* ── End-of-article divider ── */}
           <div className="mt-16 pt-8 border-t border-border">
             <Link
-              href="/blog"
+              href="/writing"
               className="inline-flex items-center gap-2 font-inter text-sm font-medium text-body/50 hover:text-navy transition-colors duration-150 group"
             >
               <span className="transition-transform duration-150 group-hover:-translate-x-0.5">←</span>

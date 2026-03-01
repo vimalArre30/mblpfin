@@ -14,12 +14,12 @@ export const metadata: Metadata = {
   description: "Long reads on money, time, and decisions that compound.",
   metadataBase: new URL(BRAND.url),
   alternates: {
-    canonical: `${BRAND.url}/blog`,
+    canonical: `${BRAND.url}/writing`,
   },
   openGraph: {
     title: "Writing | Mr. Bottom Line",
     description: "Long reads on money, time, and decisions that compound.",
-    url: `${BRAND.url}/blog`,
+    url: `${BRAND.url}/writing`,
     siteName: BRAND.name,
     type: "website",
     images: [
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
 // component that handles category filtering.
 // ---------------------------------------------------------------------------
 
-export default function BlogPage() {
+export default function WritingPage() {
   const posts = getAllPosts();
   const categories = getAllCategories();
 

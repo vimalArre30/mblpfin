@@ -1,92 +1,40 @@
 ---
 title: "Moving in Decades"
 slug: "moving-in-decades"
-date: "2025-03-10"
+date: "2026-01-25"
 category: "Philosophy"
-excerpt: "The decisions that define a life are rarely the ones that feel urgent. They are the slow, unglamorous commitments — the things you choose to do every day for a decade without a clear reward in sight."
-readTime: "6 min read"
-coverImage: "/images/blog/decades.jpg"
+excerpt: "Two failed startups taught me to stop measuring in months. Here is what changed."
+readTime: "5 min read"
+coverImage: "/images/moving-in-decades.webp"
 published: true
 ---
 
-Most people plan in quarters.
+### Moving in Decades
 
-There is a company pressure to this. Every public business reports quarterly. Every investor assessment has a quarterly lens. The culture of productivity optimisation — OKRs, sprints, 90-day plans — has pushed the quarterly frame so deep into how we think that it now feels like the natural unit of ambition.
+I'm 36 now, and I've failed as an entrepreneur twice. I say that plainly. Both times, the pattern was almost identical. I worked on an idea passively for two or three years, as a side pursuit. It felt safe there. Then I jumped into it full-time, and once I did, I stayed for less than a year. Both times. Not because the ideas collapsed overnight, but because something inside me did.
 
-But the things that actually matter do not move in quarters. They move in decades.
+Fear played a big role. A quiet fear that asked the same question every day: am I really built for this? Once the job disappeared, every slow week felt louder, every doubt felt heavier. The other part was personal runway. I come from a background where money is always counted, never abstract. When runway feels limited, time starts working against you. You rush decisions. You look for proof too early. Staying becomes emotionally expensive.
 
----
+What stands out to me now isn't that I quit, but how quickly I quit once I went all in. The ideas didn't get a fair shot at time. In contrast, the things I never depended on immediately, never forced to justify, never tied to survival, they stayed. My current job is now over five years. YouTube creation is two and a half years. A long-running passion project is five years. Guitar learning is over a year. Spanish learning has crossed two years. None of these were rushed. None of them demanded certainty. Because of that, they had room to grow.
 
-## The Mismatch
+Somewhere along the way, my way of choosing changed. I stopped asking whether something would work soon and started asking whether it would still make sense to me ten years from now. Whether I could imagine a relationship with it that wasn't transactional. What a normal Tuesday with it would look like after the excitement faded. That question quietly disqualifies many things. It also brings calm. You don't need to touch everything. You only need to touch what can age with you.
 
-Consider what has actually changed in your life in the last quarter. Now consider what has changed in the last ten years.
+At this stage of life, starting something isn't casual anymore. A business, a hobby, even a person: all of them demand time and emotional attention. So before I begin now, I try to imagine the relationship a decade out. If I can't see steadiness, respect, and patience in that future version, I don't start. Not because it's bad, but because it doesn't belong to this phase of me.
 
-The quarter is nearly invisible. The decade is almost unrecognisable.
+I've noticed something about people who are genuinely wealthy, not performatively so. Their lives are slow. Almost boring from the outside. They don't react much. They don't move frantically. What they enjoy today isn't the result of last week's decisions, but the accumulated weight of choices they stayed with for years. The present doesn't shake them because the past already did the heavy lifting.
 
-Your skills, your relationships, your reputation, your body, your net worth — none of these move meaningfully in ninety days. They move in years. They compound over decades. The quarterly lens is not just insufficient for tracking them; it is actively misleading, because it creates the illusion that nothing is happening when in fact the most important thing is happening: slow, invisible accumulation.
+I saw this clearly in a small but telling moment from my own life. One day, the value of my gold investments went up by nearly three lakhs. It felt good, not life-changing, but noticeable. The very next day, it dropped by almost the same amount. Nothing actually changed. I didn't buy or sell. No decision was made. Yet emotionally, there was a brief rise and fall. It made me realise how trivial these fluctuations are, and how often people let them affect their peace.
 
-The investor who checks their portfolio daily will make worse decisions than the one who checks it annually. Not because the daily checker is less intelligent — but because the high-frequency signal is noise, and acting on noise destroys signal.
+This happens everywhere. Markets go up, markets go down. Numbers move. News cycles scream. Even sensible people panic when the time horizon is short. A strong model feels strong only until fear enters the room. Remaining unaffected by these swings, especially when money is involved takes years of practice and conditioning. It takes distance. It takes a longer lens than most people aren't comfortable holding.
 
-The same is true for most long-duration decisions.
+Moving in decades changes how noise lands on you. Daily movements stop feeling personal. Temporary highs don't make you reckless, and temporary lows don't make you doubt everything. You still care, but you don't react. You become stubborn in a quiet way. You stop arguing with every fluctuation. You let time do what time does best. Smooth, Compound, and Correct.
 
----
+Looking back, my earlier failures weren't just about business. They were about impatience disguised as ambition. About wanting certainty before time had a chance to participate. When you move in short bursts, every delay feels fatal. When you move in decades, delays become part of the path. You stop asking, "Is this working?" and start asking, "Is this worth staying with?"
 
-## What Decade-Thinking Looks Like
+There's also emotional relief in this way of living. You don't need every day to be meaningful. You don't need constant progress. You're okay being average for a while. You're okay learning slowly. That detachment isn't indifference, it's maturity. It's knowing that not everything needs your anxiety to move forward.
 
-Thinking in decades is not about being passive or dismissing the short term. It is about understanding which inputs compound and which inputs do not.
+Today, I'm more careful about what I let into my life. Not less ambitious, just more selective. If I touch something now, I assume I'm shaking hands with it for a long time. That assumption filters out most distractions and deepens what remains. Depth comes from duration. Stability comes from staying.
 
-**Skills compound over decades.** A skill practiced for ten years produces expertise that cannot be replicated quickly by someone starting today. This is why early career decisions about what to get deep in matter more than most people appreciate. The question is not "what is the best job available right now?" but "what is the skill I want to be excellent at in ten years, and does this role develop it?"
+Moving in decades doesn't make life faster. It makes it steadier. It doesn't promise success. It promises continuity. And continuity, given enough time, quietly outperforms intensity.
 
-**Relationships compound over decades.** The friend you have had for fifteen years will do things for you that a contact you met last year will not. Not because of any formal obligation — but because trust accumulates through time and shared experience. This is why investing seriously in a small number of long-term relationships is worth more than aggressively networking at every opportunity.
-
-**Reputation compounds over decades.** In the short run, being honest when it is inconvenient seems costly. In the long run, being the person known for honesty becomes an enormous asset. The market for reliable, trustworthy people is permanently undersupplied. It takes a decade to build that reputation. It takes one bad decision to damage it.
-
-**Habits compound over decades.** A daily practice that is invisible in week one is transformative by year ten. The person who runs three times a week for ten years arrives at fifty with a biological age a decade younger than their peers. The person who writes every day for ten years has a body of work that no single inspired sprint could produce.
-
----
-
-## The Discipline of Delay
-
-One of the strangest things about decade-thinking is that it requires you to be comfortable with not seeing results.
-
-The first year of serious running is humbling. You are slow, you tire quickly, you see no dramatic transformation in the mirror. The feedback is muted.
-
-The first year of serious writing is the same. The first year of building a new skill, or establishing a reputation in a new domain, or making new kinds of investments — all of it is slow, unglamorous, and unrewarding in the short term.
-
-This is the discipline of delay. The willingness to do the work before the results are visible. To commit to the practice before you have proof that it is working.
-
-Most people cannot sustain this. The quarter comes and the numbers are not impressive. The mood drops. The motivation wobbles. The practice gets de-prioritised. Something else gets attention.
-
-And then, in ten years, they look at the person who kept going through the unmeasurable years and cannot understand how the gap got so large.
-
----
-
-## The People Who Get This Right
-
-The people who build things of durable value — in business, in craft, in life — almost universally share one characteristic. They think in long time horizons.
-
-They chose a craft and stayed with it. They chose a city or a business or a set of relationships and invested deeply rather than spreading wide. They said no to opportunities that were genuinely attractive because those opportunities did not compound toward the thing they were actually building.
-
-This is not conservatism. It is focus. The person who does one thing for ten years knows something about that thing that someone who has done ten things in one year cannot.
-
----
-
-## A Practical Orientation
-
-If you are early in your career or in a life transition, the question worth sitting with is not "what do I want in the next year?" It is "what do I want to be able to say I did for the decade that starts now?"
-
-What skill do you want to be genuinely excellent at by the time you are ten years older?
-
-What relationship do you want to have invested in deeply?
-
-What practice do you want to have not missed a single week of?
-
-What body of work do you want to have accumulated?
-
-These questions feel uncomfortable because they do not have satisfying short-term answers. The answer is always just: start, and keep going.
-
-But that is the point. The decade has to start somewhere. It might as well start now.
-
-The results will not be visible for years. They will compound quietly, invisibly, in the background of your life.
-
-And then one day, ten years from now, you will look back — and the gap will be obvious.
+At 36, that feels like the right way to move.

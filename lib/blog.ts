@@ -18,7 +18,9 @@ export type Category =
   | "Personal Finance"
   | "Philosophy"
   | "Lifestyle"
-  | "Technology";
+  | "Technology"
+  | "Entrepreneurship"
+  | "Farmstay";
 
 /** Frontmatter fields present on every published post. */
 export interface PostMeta {
