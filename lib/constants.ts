@@ -167,13 +167,13 @@ export const PHILOSOPHY = {
   ],
 };
 
-// --------------- THINKING (SUBSTACK) ---------------
+// --------------- THINKING ---------------
 export const THINKING = {
   sectionLabel: "THINKING",
   heading: "Return on Life.",
   subtext:
-    "An anti-hustle newsletter on money, work, and life decisions that actually matter over decades. Published on Substack.",
-  cta: { label: "Read All Articles on Substack →", href: "https://mrbottomline.substack.com" },
+    "Long reads on money, work, and life decisions that actually matter over decades.",
+  cta: { label: "View all writing →", href: "/writing" },
   articles: [
     {
       title: "The ROI of Saying No",
