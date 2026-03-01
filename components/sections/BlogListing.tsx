@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import SectionLabel from "@/components/ui/SectionLabel";
 import type { PostMeta, Category } from "@/lib/blog";
 
@@ -75,36 +76,51 @@ function PostCard({ post }: PostCardProps) {
   return (
     <Link
       href={`/writing/${post.slug}`}
-      className="group flex flex-col bg-white rounded-2xl p-8 border border-border shadow-sm hover:shadow-md transition-shadow duration-200"
+      className="group flex flex-col bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden"
     >
-      {/* Category + read time */}
-      <div className="flex items-center justify-between mb-4">
-        <span className="font-inter text-xs font-semibold uppercase tracking-[0.12em] text-navy/60">
-          {post.category}
-        </span>
-        <span className="font-inter text-xs text-body/40 tabular-nums">
-          {post.readTime}
-        </span>
-      </div>
+      {/* Cover image */}
+      {post.coverImage && (
+        <div className="relative w-full aspect-[16/9]">
+          <Image
+            src={post.coverImage}
+            alt={post.title}
+            fill
+            className="object-cover"
+          />
+        </div>
+      )}
 
-      {/* Title */}
-      <h2 className="font-playfair text-xl font-bold text-ink leading-snug mb-3 group-hover:text-navy transition-colors duration-150">
-        {post.title}
-      </h2>
+      {/* Card content */}
+      <div className="flex flex-col flex-1 p-8">
+        {/* Category + read time */}
+        <div className="flex items-center justify-between mb-4">
+          <span className="font-inter text-xs font-semibold uppercase tracking-[0.12em] text-navy/60">
+            {post.category}
+          </span>
+          <span className="font-inter text-xs text-body/40 tabular-nums">
+            {post.readTime}
+          </span>
+        </div>
 
-      {/* Excerpt */}
-      <p className="font-inter text-body text-[14px] leading-relaxed flex-1 mb-6">
-        {post.excerpt}
-      </p>
+        {/* Title */}
+        <h2 className="font-playfair text-xl font-bold text-ink leading-snug mb-3 group-hover:text-navy transition-colors duration-150">
+          {post.title}
+        </h2>
 
-      {/* Date + Read link */}
-      <div className="flex items-center justify-between pt-4 border-t border-border">
-        <span className="font-inter text-xs text-body/40">
-          {formatDate(post.date)}
-        </span>
-        <span className="font-inter text-sm font-semibold text-navy group-hover:text-navy-dark transition-colors duration-150">
-          Read →
-        </span>
+        {/* Excerpt */}
+        <p className="font-inter text-body text-[14px] leading-relaxed flex-1 mb-6">
+          {post.excerpt}
+        </p>
+
+        {/* Date + Read link */}
+        <div className="flex items-center justify-between pt-4 border-t border-border">
+          <span className="font-inter text-xs text-body/40">
+            {formatDate(post.date)}
+          </span>
+          <span className="font-inter text-sm font-semibold text-navy group-hover:text-navy-dark transition-colors duration-150">
+            Read →
+          </span>
+        </div>
       </div>
     </Link>
   );

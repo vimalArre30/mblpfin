@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import { getAllPosts, getPostBySlug } from "@/lib/blog";
@@ -210,6 +211,19 @@ export default async function PostPage({ params }: PageProps) {
               </time>
             </div>
           </header>
+
+          {/* ── Cover image ── */}
+          {post.coverImage && (
+            <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden mb-10">
+              <Image
+                src={post.coverImage}
+                alt={post.title}
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
+          )}
 
           {/* ── Article body ── */}
           {/* prose-lg: 18px base, 1.75 line-height baseline (we override to 1.85 in config) */}
