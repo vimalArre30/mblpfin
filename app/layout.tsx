@@ -23,6 +23,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(BRAND.url),
   alternates: {
     canonical: BRAND.url,
+    types: {
+      "application/rss+xml": `${BRAND.url}/feed.xml`,
+    },
   },
   icons: {
     icon: { url: "/favicon.svg", type: "image/svg+xml" },

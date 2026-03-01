@@ -27,6 +27,7 @@ export const NAV_LINKS = [
   { label: "About", href: "#about" },
   { label: "Pursuits", href: "#pursuits" },
   { label: "Thinking", href: "#thinking" },
+  { label: "Writing", href: "/blog" },
   { label: "Collaborate", href: "#collaborate" },
   { label: "Community", href: "#community" },
 ];
