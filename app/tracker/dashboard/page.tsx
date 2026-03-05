@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import SignOutButton from "./SignOutButton";
 
@@ -70,24 +71,31 @@ export default async function DashboardPage() {
             ok={(categories?.length ?? 0) > 0}
           />
           <StatusCard
-            label="UI"
-            value="Coming Day 3"
-            detail="Transaction entry + wallet list"
-            ok={false}
-            pending
+            label="Wallets"
+            value="Manage"
+            detail="Create and delete wallets"
+            ok
+            href="/tracker/wallets"
           />
         </div>
 
-        {/* Coming soon placeholder */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-10 text-center">
-          <div className="text-4xl mb-4">🏗️</div>
-          <h2 className="font-playfair text-xl font-semibold text-white mb-2">
-            Dashboard shell is live
-          </h2>
-          <p className="text-white/40 text-sm max-w-sm mx-auto">
-            Authentication, RLS, and seeding are all wired up. Transaction UI
-            and wallet management start next.
-          </p>
+        {/* Quick nav */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <QuickNavCard
+            emoji="👛"
+            title="Wallets"
+            description="Create and manage your money buckets — Salary, Savings, and more."
+            href="/tracker/wallets"
+            cta="Open Wallets"
+          />
+          <QuickNavCard
+            emoji="🏗️"
+            title="Transactions"
+            description="Log income and expenses against your wallets. Coming soon."
+            href="#"
+            cta="Coming soon"
+            disabled
+          />
         </div>
       </main>
     </div>
@@ -100,15 +108,17 @@ function StatusCard({
   detail,
   ok,
   pending,
+  href,
 }: {
   label: string;
   value: string;
   detail: string;
   ok: boolean;
   pending?: boolean;
+  href?: string;
 }) {
-  return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+  const inner = (
+    <>
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-medium text-white/40 uppercase tracking-wider">
           {label}
@@ -125,6 +135,59 @@ function StatusCard({
       </div>
       <p className="text-white font-semibold text-lg">{value}</p>
       <p className="text-white/35 text-xs mt-0.5">{detail}</p>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="block bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/[0.08] transition"
+      >
+        {inner}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-xl p-5">{inner}</div>
+  );
+}
+
+function QuickNavCard({
+  emoji,
+  title,
+  description,
+  href,
+  cta,
+  disabled,
+}: {
+  emoji: string;
+  title: string;
+  description: string;
+  href: string;
+  cta: string;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-7">
+      <div className="text-3xl mb-4">{emoji}</div>
+      <h3 className="font-playfair text-lg font-semibold text-white mb-1">
+        {title}
+      </h3>
+      <p className="text-white/40 text-sm mb-5">{description}</p>
+      {disabled ? (
+        <span className="inline-block text-sm text-white/25 border border-white/10 rounded-xl px-4 py-2 cursor-not-allowed">
+          {cta}
+        </span>
+      ) : (
+        <Link
+          href={href}
+          className="inline-block text-sm font-semibold text-navy-dark bg-white rounded-xl px-4 py-2 hover:bg-white/90 transition"
+        >
+          {cta}
+        </Link>
+      )}
     </div>
   );
 }
