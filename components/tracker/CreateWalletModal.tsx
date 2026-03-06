@@ -3,6 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
+const EMOJI_OPTIONS = [
+  "💰", "💳", "🏦", "💵", "🛒", "🍔", "✈️", "🏠",
+  "💊", "📱", "🎮", "👗", "📚", "🚗", "⚡", "🎵",
+  "🏋️", "🛍️", "🎁", "🍕",
+];
+
 const PRESET_COLORS = [
   "#2563EB", // Blue
   "#16A34A", // Green
@@ -30,7 +36,7 @@ export default function CreateWalletModal({
   onClose: () => void;
 }) {
   const [name, setName] = useState("");
-  const [emoji, setEmoji] = useState("💰");
+  const [emoji, setEmoji] = useState<string | null>(null);
   const [color, setColor] = useState(PRESET_COLORS[0]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -70,7 +76,7 @@ export default function CreateWalletModal({
 
     const { data, error: dbError } = await supabase
       .from("wallets")
-      .insert({ user_id: user.id, name: trimmed, emoji: emoji.trim() || null, color })
+      .insert({ user_id: user.id, name: trimmed, emoji: emoji ?? null, color })
       .select()
       .single();
 
@@ -123,18 +129,30 @@ export default function CreateWalletModal({
             />
           </div>
 
-          {/* Emoji */}
+          {/* Emoji grid picker */}
           <div>
-            <label className="block text-xs font-medium text-white/50 mb-1.5">
-              Emoji
+            <label className="block text-xs font-medium text-white/50 mb-2">
+              Emoji{" "}
+              <span className="text-white/25 font-normal">(optional)</span>
             </label>
-            <input
-              type="text"
-              value={emoji}
-              onChange={(e) => setEmoji(e.target.value)}
-              placeholder="💰"
-              className="w-24 bg-white/10 border border-white/15 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition text-center"
-            />
+            <div className="grid grid-cols-10 gap-1">
+              {EMOJI_OPTIONS.map((e) => (
+                <button
+                  key={e}
+                  type="button"
+                  onClick={() => setEmoji(emoji === e ? null : e)}
+                  className={`w-8 h-8 text-base flex items-center justify-center rounded-lg transition ${
+                    emoji === e
+                      ? "bg-white/20 ring-2 ring-white/60"
+                      : "hover:bg-white/10"
+                  }`}
+                  aria-label={e}
+                  aria-pressed={emoji === e}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Color swatches */}
@@ -166,7 +184,7 @@ export default function CreateWalletModal({
             className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-3"
             style={{ borderLeft: `4px solid ${color}` }}
           >
-            <span className="text-2xl">{emoji || "💼"}</span>
+            <span className="text-2xl">{emoji ?? "💼"}</span>
             <span className="text-white font-medium text-sm">
               {name.trim() || "Wallet preview"}
             </span>

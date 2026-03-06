@@ -89,12 +89,11 @@ export default async function DashboardPage() {
             cta="Open Wallets"
           />
           <QuickNavCard
-            emoji="🏗️"
+            emoji="📋"
             title="Transactions"
-            description="Log income and expenses against your wallets. Coming soon."
-            href="#"
-            cta="Coming soon"
-            disabled
+            description="Log income and expenses against your wallets. Track every rupee."
+            href="/tracker/transactions"
+            cta="Open Transactions"
           />
         </div>
       </main>
