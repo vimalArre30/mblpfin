@@ -2,6 +2,7 @@ import Link from "next/link";
 import Navbar from "@/components/sections/Navbar";
 import Hero from "@/components/sections/Hero";
 import NarrativeArc from "@/components/sections/NarrativeArc";
+import ThreePillars from "@/components/sections/ThreePillars";
 import Pursuits from "@/components/sections/Pursuits";
 import YouTubeFeature from "@/components/sections/YouTubeFeature";
 import Philosophy from "@/components/sections/Philosophy";
@@ -18,6 +19,7 @@ export default function Home() {
       <main>
         <Hero />
         <NarrativeArc />
+        <ThreePillars />
         <Pursuits />
         <YouTubeFeature />
         <Philosophy />
