@@ -3,7 +3,6 @@ import Navbar from "@/components/sections/Navbar";
 import Hero from "@/components/sections/Hero";
 import NarrativeArc from "@/components/sections/NarrativeArc";
 import ThreePillars from "@/components/sections/ThreePillars";
-import Pursuits from "@/components/sections/Pursuits";
 import YouTubeFeature from "@/components/sections/YouTubeFeature";
 import Philosophy from "@/components/sections/Philosophy";
 import Thinking from "@/components/sections/Thinking";
@@ -20,7 +19,6 @@ export default function Home() {
         <Hero />
         <NarrativeArc />
         <ThreePillars />
-        <Pursuits />
         <YouTubeFeature />
         <Philosophy />
         <Thinking />
