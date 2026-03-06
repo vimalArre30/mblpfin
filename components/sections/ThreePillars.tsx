@@ -28,7 +28,7 @@ export default function ThreePillars() {
               <p className="font-inter text-xs font-semibold uppercase tracking-[0.15em] text-blue-200 mb-2">
                 CHIEF OF PRODUCT · 5+ YEARS
               </p>
-              <h3 className="font-playfair text-2xl font-bold mb-4">ARRÊ Voice</h3>
+              <h3 className="font-playfair text-2xl font-bold mb-4">Arré Voice</h3>
               <p className="font-inter text-blue-100 leading-relaxed text-[15px] flex-1">
                 India's short-form social audio app — a platform where anyone can create, share, and discover 30-second Voicepods. Built from the ground up, overseeing product and engineering across growth, monetisation, and platform stability.
               </p>
@@ -38,7 +38,7 @@ export default function ThreePillars() {
                 rel="noopener noreferrer"
                 className="mt-8 inline-flex items-center gap-2 font-inter text-sm font-semibold text-white hover:text-blue-200 transition-colors"
               >
-                Visit ARRÊ Voice →
+                Visit Arré Voice →
               </Link>
             </div>
 
@@ -55,7 +55,7 @@ export default function ThreePillars() {
                 A farmstay being built deliberately and patiently. Serene Windsor is about craft, taste, and quiet quality over loud marketing. Brand is capital. Perception compounds. Opening for guests July 2026.
               </p>
               <Link
-                href="https://sserenewindsor.com"
+                href="https://serenewindsor.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-8 inline-flex items-center gap-2 font-inter text-sm font-semibold text-navy hover:text-navy-dark transition-colors"
