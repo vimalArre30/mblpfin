@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://www.mrbottomline.club/og-image.png",
+        url: "https://www.mrbottomline.club/images/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "Mr. Bottom Line",
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     title: "Mr. Bottom Line — Product Builder. Systems Thinker. Capital Allocator.",
     description:
       "Vimal is a product builder turned capital allocator. Chief of Product at ARRÊ Voice. Building Serene Windsor, Mr. Bottom Line on YouTube, and backing high-agency founders.",
-    images: ["https://www.mrbottomline.club/og-image.png"],
+    images: ["https://www.mrbottomline.club/images/og-image.jpg"],
   },
   robots: {
     index: true,
