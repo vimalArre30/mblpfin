@@ -1,0 +1,35 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import TransactionsClient from "./TransactionsClient";
+
+export const metadata = {
+  title: "Transactions — MrBottomLine Tracker",
+};
+
+export default async function TransactionsPage() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/tracker/login");
+
+  const [{ data: wallets }, { data: transactions }] = await Promise.all([
+    supabase.from("wallets").select("*").order("created_at"),
+    supabase
+      .from("transactions")
+      .select("*, categories(name, icon), wallets(name, emoji, color)")
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(50),
+  ]);
+
+  return (
+    <TransactionsClient
+      initialTransactions={transactions ?? []}
+      wallets={wallets ?? []}
+      userEmail={user.email ?? user.phone ?? ""}
+    />
+  );
+}
