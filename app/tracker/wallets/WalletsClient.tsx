@@ -52,15 +52,29 @@ function WalletCard({
 
   return (
     <div
-      className="relative bg-white/5 border border-white/10 rounded-xl p-5 transition-colors hover:bg-white/[0.08] cursor-default"
-      style={{ borderLeft: `4px solid ${accent}` }}
+      className="relative group"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      <Link
+        href={`/tracker/wallets/${wallet.id}`}
+        className="block bg-white/5 border border-white/10 rounded-xl p-5 transition-colors hover:bg-white/[0.08]"
+        style={{ borderLeft: `4px solid ${accent}` }}
+      >
+        <div className="text-3xl mb-3 leading-none">{wallet.emoji ?? "💼"}</div>
+        <p className="font-semibold text-white text-base leading-snug">
+          {wallet.name}
+        </p>
+        <p className="text-xs text-white/30 mt-1">View transactions →</p>
+      </Link>
+
       {/* Delete button — visible on hover or while deleting */}
       {(hovered || isDeleting) && (
         <button
-          onClick={onDelete}
+          onClick={(e) => {
+            e.preventDefault();
+            onDelete();
+          }}
           disabled={isDeleting}
           className="absolute top-3 right-3 text-white/30 hover:text-red-400 transition disabled:opacity-50"
           aria-label={`Delete ${wallet.name}`}
@@ -72,11 +86,6 @@ function WalletCard({
           )}
         </button>
       )}
-
-      <div className="text-3xl mb-3 leading-none">{wallet.emoji ?? "💼"}</div>
-      <p className="font-semibold text-white text-base leading-snug">
-        {wallet.name}
-      </p>
     </div>
   );
 }

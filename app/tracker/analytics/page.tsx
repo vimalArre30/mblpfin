@@ -1,17 +1,16 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import SignOutButton from "./SignOutButton";
-import DashboardClient from "./DashboardClient";
+import SignOutButton from "@/app/tracker/dashboard/SignOutButton";
+import AnalyticsClient from "./AnalyticsClient";
 import type { CategorySpend } from "@/components/tracker/SpendByCategory";
 import type { MonthlyDataPoint } from "@/components/tracker/MonthlyChart";
 import type { NeedWantData } from "@/components/tracker/NeedWantRatio";
-import type { Transaction } from "@/components/tracker/TransactionFeed";
 
 export const metadata = {
-  title: "Dashboard — MrBottomLine Tracker",
+  title: "Analytics — MrBottomLine Tracker",
 };
 
-export default async function DashboardPage() {
+export default async function AnalyticsPage() {
   const supabase = await createClient();
 
   const {
@@ -20,61 +19,37 @@ export default async function DashboardPage() {
 
   if (!user) redirect("/tracker/login");
 
-  // Fetch transactions with joined data
-  const { data: rawTransactions } = await supabase
+  const { data: rawTx } = await supabase
     .from("transactions")
-    .select(
-      `
-      *,
-      wallets(name, emoji, color),
-      categories(name),
-      transaction_labels(labels(name))
-    `
-    )
+    .select("amount, date, type, categories(name), transaction_labels(labels(name))")
     .order("date", { ascending: false });
 
-  const transactions: Transaction[] = (rawTransactions ?? []) as Transaction[];
+  const transactions = rawTx ?? [];
 
-  // Fetch wallets for AddEntryModal
-  const { data: wallets } = await supabase
-    .from("wallets")
-    .select("id, name, emoji, color, created_at")
-    .order("created_at", { ascending: true });
-
-  // --- Compute stats ---
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
     .toISOString()
     .split("T")[0];
 
   let totalSpent = 0;
-  let thisMonth = 0;
   let needTotal = 0;
   let wantTotal = 0;
 
   const categoryTotals: Record<string, { name: string; total: number }> = {};
   const monthlyMap: Record<string, { month: string; total: number }> = {};
 
-  // Six months ago, first day
-  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
-    .toISOString()
-    .split("T")[0];
-
   for (const tx of transactions) {
     const amount = Number(tx.amount);
-    if (tx.type === "credit") continue;
+    if ((tx as any).type === "credit") continue;
 
     totalSpent += amount;
-    if (tx.date >= startOfMonth) thisMonth += amount;
 
-    // Category totals
-    if (tx.categories?.name) {
-      const n = tx.categories.name;
-      if (!categoryTotals[n]) categoryTotals[n] = { name: n, total: 0 };
-      categoryTotals[n].total += amount;
+    const catName = (tx as any).categories?.name as string | undefined;
+    if (catName) {
+      if (!categoryTotals[catName]) categoryTotals[catName] = { name: catName, total: 0 };
+      categoryTotals[catName].total += amount;
     }
 
-    // Monthly totals (last 6 months)
     if (tx.date >= sixMonthsAgo) {
       const d = new Date(tx.date + "T00:00:00");
       const sortKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -83,11 +58,9 @@ export default async function DashboardPage() {
       monthlyMap[sortKey].total += amount;
     }
 
-    // Need vs Want
-    const labelNames =
-      tx.transaction_labels
-        ?.map((tl) => tl.labels?.name)
-        .filter((n): n is string => Boolean(n)) ?? [];
+    const labelNames = ((tx as any).transaction_labels ?? [])
+      .map((tl: any) => tl.labels?.name)
+      .filter(Boolean) as string[];
     if (labelNames.includes("Need")) needTotal += amount;
     if (labelNames.includes("Want")) wantTotal += amount;
   }
@@ -101,11 +74,9 @@ export default async function DashboardPage() {
     .map(([, v]) => v);
 
   const needWant: NeedWantData = { needTotal, wantTotal };
-  const walletCount = wallets?.length ?? 0;
 
   return (
     <div className="min-h-screen bg-navy-dark font-inter">
-      {/* Top bar */}
       <header className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="font-playfair text-lg font-semibold text-white tracking-tight">
@@ -116,19 +87,18 @@ export default async function DashboardPage() {
         </div>
         <div className="flex items-center gap-4">
           <span className="text-xs text-white/35 hidden sm:block">
-            {user.email ?? user.phone ?? "Your account"}
+            {user.email ?? ""}
           </span>
           <SignOutButton />
         </div>
       </header>
 
-      <DashboardClient
-        stats={{ totalSpent, thisMonth, walletCount }}
+      <AnalyticsClient
         chartData={chartData}
         monthlyData={monthlyData}
         needWant={needWant}
-        transactions={transactions}
-        wallets={wallets ?? []}
+        totalSpent={totalSpent}
+        txCount={transactions.length}
       />
     </div>
   );
