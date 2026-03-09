@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Wallet } from "./CreateWalletModal";
+import VoiceRecorder from "./VoiceRecorder";
 
 type Category = { id: string; name: string; icon: string | null };
 type Label = { id: string; name: string; color: string | null };
@@ -27,6 +28,11 @@ export default function AddEntryModal({
   const [categories, setCategories] = useState<Category[]>([]);
   const [labels, setLabels] = useState<Label[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+
+  const [voiceTranscript, setVoiceTranscript] = useState("");
+  const [showVoice, setShowVoice] = useState(false);
+  const [parsing, setParsing] = useState(false);
+  const [parseError, setParseError] = useState("");
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -62,6 +68,58 @@ export default function AddEntryModal({
     setSelectedLabels((prev) =>
       prev.includes(id) ? prev.filter((l) => l !== id) : [...prev, id]
     );
+  }
+
+  async function parseVoice(transcript: string) {
+    setVoiceTranscript(transcript);
+    setShowVoice(false);
+    setParseError("");
+    setParsing(true);
+
+    try {
+      const res = await fetch("/api/parse-voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transcript,
+          categories: categories.map((c) => c.name),
+          wallets: wallets.map((w) => w.name),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setParseError(data.message ?? data.error ?? "Parsing failed — please fill in manually");
+        return;
+      }
+
+      // Auto-fill form fields
+      if (data.amount != null) setAmount(String(data.amount));
+      if (data.description) setDescription(data.description);
+      if (data.note) setNote(data.note);
+      if (data.date) setDate(data.date);
+
+      // Match category by name (case-insensitive)
+      if (data.category) {
+        const match = categories.find(
+          (c) => c.name.toLowerCase() === data.category.toLowerCase()
+        );
+        if (match) setCategoryId(match.id);
+      }
+
+      // Match wallet by name (case-insensitive)
+      if (data.wallet) {
+        const match = wallets.find(
+          (w) => w.name.toLowerCase() === data.wallet.toLowerCase()
+        );
+        if (match) setWalletId(match.id);
+      }
+    } catch {
+      setParseError("Couldn't reach the server — please fill in manually");
+    } finally {
+      setParsing(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -185,6 +243,73 @@ export default function AddEntryModal({
                 placeholder="e.g. Lunch at Bombay Canteen"
                 className="w-full bg-white/10 border border-white/15 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition"
               />
+            </div>
+
+            {/* Voice input */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-medium text-white/50">
+                  Voice Input{" "}
+                  <span className="text-white/25 font-normal">(optional)</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowVoice((v) => !v)}
+                  className={`flex items-center gap-1 text-xs rounded-lg px-2.5 py-1 transition ${
+                    showVoice
+                      ? "bg-white/12 text-white/80"
+                      : "text-white/35 hover:text-white/60 hover:bg-white/8"
+                  }`}
+                >
+                  <span>🎙️</span>
+                  <span>{showVoice ? "Hide" : "Open"}</span>
+                </button>
+              </div>
+
+              {showVoice && (
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                  <VoiceRecorder onUse={parseVoice} />
+                </div>
+              )}
+
+              {/* Parsing loader */}
+              {parsing && (
+                <div className="mt-2 flex items-center gap-2.5 text-xs text-white/50 bg-white/5 border border-white/10 rounded-lg px-3 py-2.5">
+                  <svg className="animate-spin w-3.5 h-3.5 shrink-0 text-white/40" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Parsing with AI…
+                </div>
+              )}
+
+              {/* Parse error */}
+              {parseError && !parsing && (
+                <p className="mt-2 text-xs text-amber-400/80 bg-amber-400/8 border border-amber-400/15 rounded-lg px-3 py-2">
+                  {parseError}
+                </p>
+              )}
+
+              {/* Raw transcript (read-only, shown after parse) */}
+              {voiceTranscript && !showVoice && !parsing && (
+                <div className="mt-2 relative">
+                  <p className="text-xs text-white/25 mb-1">Voice input (raw)</p>
+                  <div className="bg-white/6 border border-white/12 rounded-lg px-3 py-2 pr-8 text-sm text-white/55 leading-relaxed italic">
+                    "{voiceTranscript}"
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setVoiceTranscript("");
+                      setParseError("");
+                    }}
+                    className="absolute top-6 right-2 text-white/25 hover:text-white/60 transition text-xs"
+                    aria-label="Clear voice transcript"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Date + Wallet */}

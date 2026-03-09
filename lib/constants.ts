@@ -30,6 +30,7 @@ export const NAV_LINKS = [
   { label: "Writing", href: "/writing" },
   { label: "Collaborate", href: "#collaborate" },
   { label: "Community", href: "#community" },
+  { label: "Tracker", href: "/tracker" },
 ];
 
 // --------------- HERO ---------------
