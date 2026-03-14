@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import CreateWalletModal, {
   type Wallet,
 } from "@/components/tracker/CreateWalletModal";
+import SetOpeningBalanceModal from "@/components/tracker/SetOpeningBalanceModal";
 import SignOutButton from "@/app/tracker/dashboard/SignOutButton";
 
 function TrashIcon({ className }: { className?: string }) {
@@ -20,6 +21,23 @@ function TrashIcon({ className }: { className?: string }) {
       strokeLinejoin="round"
     >
       <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+    </svg>
+  );
+}
+
+function PencilIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
     </svg>
   );
 }
@@ -41,10 +59,12 @@ function SpinnerIcon({ className }: { className?: string }) {
 function WalletCard({
   wallet,
   onDelete,
+  onEdit,
   isDeleting,
 }: {
   wallet: Wallet;
   onDelete: () => void;
+  onEdit: () => void;
   isDeleting: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
@@ -68,23 +88,36 @@ function WalletCard({
         <p className="text-xs text-white/30 mt-1">View transactions →</p>
       </Link>
 
-      {/* Delete button — visible on hover or while deleting */}
+      {/* Action buttons — visible on hover */}
       {(hovered || isDeleting) && (
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            onDelete();
-          }}
-          disabled={isDeleting}
-          className="absolute top-3 right-3 text-white/30 hover:text-red-400 transition disabled:opacity-50"
-          aria-label={`Delete ${wallet.name}`}
-        >
-          {isDeleting ? (
-            <SpinnerIcon className="w-4 h-4 animate-spin" />
-          ) : (
-            <TrashIcon className="w-4 h-4" />
-          )}
-        </button>
+        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              onEdit();
+            }}
+            className="text-white/30 hover:text-white/70 transition"
+            aria-label={`Set opening balance for ${wallet.name}`}
+            title="Set opening balance"
+          >
+            <PencilIcon className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              onDelete();
+            }}
+            disabled={isDeleting}
+            className="text-white/30 hover:text-red-400 transition disabled:opacity-50"
+            aria-label={`Delete ${wallet.name}`}
+          >
+            {isDeleting ? (
+              <SpinnerIcon className="w-4 h-4 animate-spin" />
+            ) : (
+              <TrashIcon className="w-4 h-4" />
+            )}
+          </button>
+        </div>
       )}
     </div>
   );
@@ -100,6 +133,7 @@ export default function WalletsClient({
   const [wallets, setWallets] = useState<Wallet[]>(initialWallets);
   const [showModal, setShowModal] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingWallet, setEditingWallet] = useState<Wallet | null>(null);
 
   const supabase = createClient();
 
@@ -198,6 +232,7 @@ export default function WalletsClient({
                 key={wallet.id}
                 wallet={wallet}
                 onDelete={() => handleDelete(wallet)}
+                onEdit={() => setEditingWallet(wallet)}
                 isDeleting={deletingId === wallet.id}
               />
             ))}
@@ -210,6 +245,15 @@ export default function WalletsClient({
         <CreateWalletModal
           onCreated={handleCreated}
           onClose={() => setShowModal(false)}
+        />
+      )}
+
+      {/* Opening balance edit modal */}
+      {editingWallet && (
+        <SetOpeningBalanceModal
+          wallet={editingWallet}
+          onSaved={() => setEditingWallet(null)}
+          onClose={() => setEditingWallet(null)}
         />
       )}
     </div>
