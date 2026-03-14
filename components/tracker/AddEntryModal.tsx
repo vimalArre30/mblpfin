@@ -504,7 +504,6 @@ export default function AddEntryModal({
                     </button>
                   </div>
                 )}
-              </div>
             </div>
 
             {/* Date + Wallet (for income/expense) */}
