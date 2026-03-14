@@ -28,7 +28,83 @@ const LABEL_COLORS = [
   "#DB2777",
 ];
 
+// ~55 financial / lifestyle emojis covering all common spend categories
+const FINANCE_EMOJIS = [
+  // Money & Banking
+  "💰","💵","💳","🏦","💸","🤑","💹","📈","📊","🏧",
+  // Food & Drink
+  "🍔","🍕","🍜","🍣","☕","🍷","🥗","🍰","🛒","🥘",
+  // Transport
+  "🚗","✈️","⛽","🚌","🚂","🛵","🚲","🚕","🚢","🛺",
+  // Home & Utilities
+  "🏠","💡","💧","🔥","🔑","🛏️","🧹","📦","🪑","🔌",
+  // Health & Wellness
+  "💊","🏥","🧘","🏃","🩺","🧠","💉",
+  // Entertainment & Lifestyle
+  "🎬","🎮","🎵","📺","🎯","🎲","🎭","🎪","🏆",
+  // Shopping & Personal
+  "👗","👟","👜","🛍️","💍","🧴","💄",
+  // Education & Work
+  "📚","🎓","💻","📝","🖥️",
+  // Travel & Leisure
+  "🏖️","🏔️","🗺️","🏕️","🎡",
+  // Savings & Goals
+  "🐷","🔒","💎","🌿","🎁",
+];
+
 const MAX_LEN = 30;
+
+// ─── Emoji Picker ─────────────────────────────────────────────────────────────
+
+function EmojiPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (e: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-12 h-10 bg-white/8 border border-white/12 rounded-lg text-xl flex items-center justify-center hover:bg-white/15 transition focus:outline-none focus:border-white/30"
+        aria-label="Pick icon"
+      >
+        {value}
+      </button>
+
+      {open && (
+        <>
+          {/* Backdrop to close on outside click */}
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute bottom-12 left-0 z-20 bg-[#152040] border border-white/20 rounded-2xl p-3 shadow-2xl w-[272px]">
+            <p className="text-xs text-white/30 mb-2 px-1">Pick an icon</p>
+            <div className="grid grid-cols-8 gap-0.5 max-h-48 overflow-y-auto">
+              {FINANCE_EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => { onChange(emoji); setOpen(false); }}
+                  className={`w-8 h-8 rounded-lg text-lg flex items-center justify-center hover:bg-white/15 transition ${
+                    value === emoji ? "bg-white/20 ring-1 ring-white/30" : ""
+                  }`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 // ─── Category Section ────────────────────────────────────────────────────────
 
@@ -42,7 +118,7 @@ function CategorySection({
   const supabase = createClient();
   const [items, setItems] = useState(initial);
   const [newName, setNewName] = useState("");
-  const [newIcon, setNewIcon] = useState("📦");
+  const [newIcon, setNewIcon] = useState("💰");
   const [adding, setAdding] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -55,9 +131,7 @@ function CategorySection({
       setError(`Name must be ${MAX_LEN} characters or fewer.`);
       return;
     }
-    if (
-      items.some((c) => c.name.toLowerCase() === name.toLowerCase())
-    ) {
+    if (items.some((c) => c.name.toLowerCase() === name.toLowerCase())) {
       setError("A category with that name already exists.");
       return;
     }
@@ -67,7 +141,7 @@ function CategorySection({
 
     const { data, error: dbErr } = await supabase
       .from("categories")
-      .insert({ name, icon: newIcon.trim() || "📦", user_id: userId })
+      .insert({ name, icon: newIcon, user_id: userId })
       .select()
       .single();
 
@@ -80,7 +154,7 @@ function CategorySection({
 
     setItems((prev) => [...prev, data as Category]);
     setNewName("");
-    setNewIcon("📦");
+    setNewIcon("💰");
     nameRef.current?.focus();
   }
 
@@ -93,13 +167,10 @@ function CategorySection({
       return;
 
     setDeletingId(item.id);
-
-    // Check if transactions exist (soft warning already shown above)
     const { error: dbErr } = await supabase
       .from("categories")
       .delete()
       .eq("id", item.id);
-
     setDeletingId(null);
 
     if (dbErr) {
@@ -115,7 +186,6 @@ function CategorySection({
 
   return (
     <SectionCard title="Categories" count={items.length}>
-      {/* System items */}
       {systemItems.length > 0 && (
         <div className="mb-2">
           <p className="text-xs text-white/25 uppercase tracking-wider mb-2">
@@ -127,7 +197,6 @@ function CategorySection({
         </div>
       )}
 
-      {/* User items */}
       {ownItems.length > 0 && (
         <div className="mb-2">
           {systemItems.length > 0 && (
@@ -156,15 +225,8 @@ function CategorySection({
       {/* Add form */}
       <div className="border-t border-white/10 pt-4 mt-2 space-y-2">
         {error && <p className="text-xs text-red-400">{error}</p>}
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newIcon}
-            onChange={(e) => setNewIcon(e.target.value.slice(0, 2))}
-            className="w-12 bg-white/8 border border-white/12 rounded-lg px-2 py-2 text-center text-lg focus:outline-none focus:border-white/30"
-            placeholder="📦"
-            aria-label="Category icon"
-          />
+        <div className="flex gap-2 items-center">
+          <EmojiPicker value={newIcon} onChange={setNewIcon} />
           <input
             ref={nameRef}
             type="text"
@@ -175,7 +237,7 @@ function CategorySection({
               setError("");
             }}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            className="flex-1 bg-white/8 border border-white/12 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-white/30"
+            className="flex-1 bg-white border border-white/20 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-white/40"
             placeholder="e.g. Farmstay Expenses"
           />
           <AddButton onClick={handleAdd} loading={adding} />
@@ -262,7 +324,6 @@ function LabelSection({
 
   return (
     <SectionCard title="Labels" count={items.length}>
-      {/* System labels */}
       {systemItems.length > 0 && (
         <div className="mb-2">
           <p className="text-xs text-white/25 uppercase tracking-wider mb-2">
@@ -284,7 +345,6 @@ function LabelSection({
         </div>
       )}
 
-      {/* User labels */}
       {ownItems.length > 0 && (
         <div className="mb-2">
           {systemItems.length > 0 && (
@@ -351,7 +411,7 @@ function LabelSection({
               setError("");
             }}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            className="flex-1 bg-white/8 border border-white/12 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-white/30"
+            className="flex-1 bg-white border border-white/20 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-white/40"
             placeholder="e.g. Recurring"
           />
           <AddButton onClick={handleAdd} loading={adding} />
