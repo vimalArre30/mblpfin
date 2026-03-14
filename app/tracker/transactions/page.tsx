@@ -29,7 +29,6 @@ export default async function TransactionsPage() {
     <TransactionsClient
       initialTransactions={transactions ?? []}
       wallets={wallets ?? []}
-      userEmail={user.email ?? user.phone ?? ""}
     />
   );
 }

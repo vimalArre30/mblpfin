@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import CreateWalletModal, {
   type Wallet,
 } from "@/components/tracker/CreateWalletModal";
 import SetOpeningBalanceModal from "@/components/tracker/SetOpeningBalanceModal";
-import SignOutButton from "@/app/tracker/dashboard/SignOutButton";
 
 function TrashIcon({ className }: { className?: string }) {
   return (
@@ -125,10 +123,8 @@ function WalletCard({
 
 export default function WalletsClient({
   initialWallets,
-  userEmail,
 }: {
   initialWallets: Wallet[];
-  userEmail: string;
 }) {
   const [wallets, setWallets] = useState<Wallet[]>(initialWallets);
   const [showModal, setShowModal] = useState(false);
@@ -161,32 +157,7 @@ export default function WalletsClient({
   }
 
   return (
-    <div className="min-h-screen bg-navy-dark font-inter">
-      {/* Header */}
-      <header className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="font-playfair text-lg font-semibold text-white tracking-tight">
-            Mr. Bottom Line
-          </span>
-          <span className="text-white/25 text-sm">/</span>
-          <Link
-            href="/tracker/dashboard"
-            className="text-white/60 text-sm hover:text-white/90 transition"
-          >
-            Dashboard
-          </Link>
-          <span className="text-white/25 text-sm">/</span>
-          <span className="text-white/90 text-sm">Wallets</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-xs text-white/35 hidden sm:block">
-            {userEmail}
-          </span>
-          <SignOutButton />
-        </div>
-      </header>
-
-      {/* Main */}
+    <>
       <main className="max-w-content mx-auto px-6 py-12">
         {/* Page title + action */}
         <div className="flex items-start justify-between mb-8 gap-4">
@@ -256,6 +227,6 @@ export default function WalletsClient({
           onClose={() => setEditingWallet(null)}
         />
       )}
-    </div>
+    </>
   );
 }

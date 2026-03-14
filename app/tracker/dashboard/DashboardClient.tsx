@@ -16,7 +16,6 @@ import TransactionFeed, {
   type Transaction,
 } from "@/components/tracker/TransactionFeed";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
-import TrackerNav from "@/components/tracker/TrackerNav";
 
 interface Props {
   stats: { totalIncome: number; totalExpense: number; netBalance: number; walletCount: number };
@@ -44,8 +43,6 @@ export default function DashboardClient({
 
   return (
     <>
-      <TrackerNav />
-
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 pb-24 space-y-8">
         <StatCards
           totalIncome={stats.totalIncome}

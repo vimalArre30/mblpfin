@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import AddEntryModal from "@/components/tracker/AddEntryModal";
-import SignOutButton from "@/app/tracker/dashboard/SignOutButton";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
 
 type TransactionRow = {
@@ -36,11 +34,9 @@ function formatDate(d: string) {
 export default function TransactionsClient({
   initialTransactions,
   wallets,
-  userEmail,
 }: {
   initialTransactions: TransactionRow[];
   wallets: Wallet[];
-  userEmail: string;
 }) {
   const [transactions, setTransactions] =
     useState<TransactionRow[]>(initialTransactions);
@@ -67,30 +63,7 @@ export default function TransactionsClient({
   }
 
   return (
-    <div className="min-h-screen bg-[#0F1E40] font-inter">
-      {/* Header */}
-      <header className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="font-playfair text-lg font-semibold text-white tracking-tight">
-            Mr. Bottom Line
-          </span>
-          <span className="text-white/25 text-sm">/</span>
-          <Link
-            href="/tracker/dashboard"
-            className="text-white/60 text-sm hover:text-white/90 transition"
-          >
-            Dashboard
-          </Link>
-          <span className="text-white/25 text-sm">/</span>
-          <span className="text-white/90 text-sm">Transactions</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-xs text-white/35 hidden sm:block">{userEmail}</span>
-          <SignOutButton />
-        </div>
-      </header>
-
-      {/* Main */}
+    <>
       <main className="max-w-3xl mx-auto px-6 py-12">
         {/* Page title + action */}
         <div className="flex items-start justify-between mb-8 gap-4">
@@ -162,7 +135,7 @@ export default function TransactionsClient({
           onClose={() => setShowModal(false)}
         />
       )}
-    </div>
+    </>
   );
 }
 

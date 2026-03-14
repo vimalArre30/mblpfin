@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import SignOutButton from "@/app/tracker/dashboard/SignOutButton";
 import AnalyticsClient from "./AnalyticsClient";
 import type { CategorySpend } from "@/components/tracker/SpendByCategory";
 import type { MonthlyDataPoint } from "@/components/tracker/MonthlyChart";
@@ -76,30 +75,12 @@ export default async function AnalyticsPage() {
   const needWant: NeedWantData = { needTotal, wantTotal };
 
   return (
-    <div className="min-h-screen bg-navy-dark font-inter">
-      <header className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="font-playfair text-lg font-semibold text-white tracking-tight">
-            Mr. Bottom Line
-          </span>
-          <span className="text-white/25 text-sm">/</span>
-          <span className="text-white/60 text-sm">Tracker</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-xs text-white/35 hidden sm:block">
-            {user.email ?? ""}
-          </span>
-          <SignOutButton />
-        </div>
-      </header>
-
-      <AnalyticsClient
-        chartData={chartData}
-        monthlyData={monthlyData}
-        needWant={needWant}
-        totalSpent={totalSpent}
-        txCount={transactions.length}
-      />
-    </div>
+    <AnalyticsClient
+      chartData={chartData}
+      monthlyData={monthlyData}
+      needWant={needWant}
+      totalSpent={totalSpent}
+      txCount={transactions.length}
+    />
   );
 }

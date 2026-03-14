@@ -236,19 +236,23 @@ export default function AddEntryModal({
       return;
     }
 
+    const payload = {
+      user_id: user.id,
+      wallet_id: walletId || null,
+      category_id: categoryId || null,
+      amount: parsedAmount,
+      description: description.trim(),
+      note: note.trim() || null,
+      date,
+      entry_type: entryType,
+      type: entryType === "income" ? "credit" : "debit",
+      is_opening_balance: false,
+    };
+    console.log("[AddEntry] inserting:", payload);
+
     const { data: tx, error: txError } = await supabase
       .from("transactions")
-      .insert({
-        user_id: user.id,
-        wallet_id: walletId || null,
-        category_id: categoryId || null,
-        amount: parsedAmount,
-        description: description.trim(),
-        note: note.trim() || null,
-        date,
-        entry_type: entryType,
-        type: entryType === "income" ? "credit" : "debit",
-      })
+      .insert(payload)
       .select()
       .single();
 

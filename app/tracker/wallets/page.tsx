@@ -23,7 +23,6 @@ export default async function WalletsPage() {
   return (
     <WalletsClient
       initialWallets={wallets ?? []}
-      userEmail={user.email ?? user.phone ?? ""}
     />
   );
 }

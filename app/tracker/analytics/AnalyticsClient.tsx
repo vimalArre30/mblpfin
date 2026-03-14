@@ -9,7 +9,6 @@ import MonthlyChart, {
 import NeedWantRatio, {
   type NeedWantData,
 } from "@/components/tracker/NeedWantRatio";
-import TrackerNav from "@/components/tracker/TrackerNav";
 
 interface Props {
   chartData: CategorySpend[];
@@ -27,10 +26,7 @@ export default function AnalyticsClient({
   txCount,
 }: Props) {
   return (
-    <>
-      <TrackerNav />
-
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 pb-16 space-y-8">
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 pb-16 space-y-8">
         <div>
           <h1 className="font-playfair text-2xl font-bold text-white">
             Analytics
@@ -52,7 +48,6 @@ export default function AnalyticsClient({
             wantTotal={needWant.wantTotal}
           />
         </div>
-      </main>
-    </>
+    </main>
   );
 }
