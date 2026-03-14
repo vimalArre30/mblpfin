@@ -7,6 +7,7 @@ export interface Transaction {
   date: string;
   type: string;
   entry_type: string | null;
+  is_opening_balance: boolean | null;
   transfer_id: string | null;
   to_wallet_id: string | null;
   wallets: { name: string; emoji: string; color: string } | null;
@@ -87,6 +88,7 @@ export default function TransactionFeed({
 }
 
 function TxRow({ tx, wallets }: { tx: Transaction; wallets: Wallet[] }) {
+  const isOpeningBalance = tx.is_opening_balance === true;
   const entryType = tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
   const isTransfer = entryType === "transfer";
   const isIncome = entryType === "income";
@@ -134,6 +136,39 @@ function TxRow({ tx, wallets }: { tx: Transaction; wallets: Wallet[] }) {
     transferLabel = `↔ Transfer → ${toWallet?.name ?? "another wallet"}`;
   } else if (isCreditLeg) {
     transferLabel = `↔ Transfer received`;
+  }
+
+  // Opening balance rows get a distinct muted style
+  if (isOpeningBalance) {
+    return (
+      <div
+        className="bg-white/[0.03] border border-white/8 rounded-xl px-4 py-3 flex items-start gap-3"
+        style={
+          tx.wallets?.color
+            ? { borderLeftColor: tx.wallets.color, borderLeftWidth: 3 }
+            : {}
+        }
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm italic text-white/50">
+              🏦 Opening Balance
+            </span>
+          </div>
+          {tx.wallets && (
+            <p className="text-xs text-white/25 mt-0.5">
+              {tx.wallets.emoji} {tx.wallets.name}
+            </p>
+          )}
+        </div>
+        <div className="text-right shrink-0">
+          <p className="font-bold text-sm text-green-400/70">
+            +₹{absAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+          <p className="text-xs text-white/20 mt-0.5">{displayDate}</p>
+        </div>
+      </div>
+    );
   }
 
   return (

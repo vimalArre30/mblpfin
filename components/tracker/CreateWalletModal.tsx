@@ -38,6 +38,10 @@ export default function CreateWalletModal({
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState<string | null>(null);
   const [color, setColor] = useState(PRESET_COLORS[0]);
+  const [openingBalance, setOpeningBalance] = useState("");
+  const [openingBalanceDate, setOpeningBalanceDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -86,7 +90,33 @@ export default function CreateWalletModal({
       return;
     }
 
-    onCreated(data as Wallet);
+    const wallet = data as Wallet;
+
+    // Insert opening balance transaction if provided
+    const parsedBalance = parseFloat(openingBalance);
+    if (!isNaN(parsedBalance) && parsedBalance > 0) {
+      const { error: txError } = await supabase.from("transactions").insert({
+        user_id: user.id,
+        wallet_id: wallet.id,
+        amount: parsedBalance,
+        description: "Opening Balance",
+        entry_type: "income",
+        type: "credit",
+        is_opening_balance: true,
+        date: openingBalanceDate,
+        category_id: null,
+        label_id: null,
+      });
+      if (txError) {
+        setError(`Wallet created but opening balance failed: ${txError.message}`);
+        setLoading(false);
+        // Still call onCreated so the wallet appears — the balance insert failed but the wallet exists
+        onCreated(wallet);
+        return;
+      }
+    }
+
+    onCreated(wallet);
   }
 
   return (
@@ -127,6 +157,42 @@ export default function CreateWalletModal({
               placeholder="e.g. Salary, Wealth, Mortgage"
               className="w-full bg-white/10 border border-white/15 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition"
             />
+          </div>
+
+          {/* Opening Balance + As of Date */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-white/50 mb-1.5">
+                Opening Balance{" "}
+                <span className="text-white/25 font-normal">(optional)</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/50 text-sm select-none">
+                  ₹
+                </span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.01"
+                  value={openingBalance}
+                  onChange={(e) => setOpeningBalance(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full bg-white/10 border border-white/15 rounded-lg pl-8 pr-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-white/50 mb-1.5">
+                As of Date
+              </label>
+              <input
+                type="date"
+                value={openingBalanceDate}
+                onChange={(e) => setOpeningBalanceDate(e.target.value)}
+                className="w-full bg-white/10 border border-white/15 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition [color-scheme:dark]"
+              />
+            </div>
           </div>
 
           {/* Emoji grid picker */}

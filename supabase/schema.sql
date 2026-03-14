@@ -153,3 +153,7 @@ alter table transactions
 -- 4. to_wallet_id — populated on the debit leg only
 alter table transactions
   add column if not exists to_wallet_id uuid references wallets(id) on delete set null;
+
+-- 5. is_opening_balance — marks the auto-inserted opening balance transaction
+alter table transactions
+  add column if not exists is_opening_balance boolean not null default false;
