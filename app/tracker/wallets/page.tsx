@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import WalletsClient from "./WalletsClient";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Wallets — MrBottomLine Tracker",
 };

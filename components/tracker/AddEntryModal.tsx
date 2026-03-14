@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Wallet } from "./CreateWalletModal";
 import VoiceRecorder from "./VoiceRecorder";
@@ -43,6 +44,7 @@ export default function AddEntryModal({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const router = useRouter();
   const amountRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
@@ -221,6 +223,7 @@ export default function AddEntryModal({
         return;
       }
 
+      router.refresh();
       onCreated();
       return;
     }
@@ -270,6 +273,7 @@ export default function AddEntryModal({
       await supabase.from("transaction_labels").insert(labelRows);
     }
 
+    router.refresh();
     onCreated();
   }
 

@@ -6,6 +6,8 @@ import type { MonthlyDataPoint } from "@/components/tracker/MonthlyChart";
 import type { NeedWantData } from "@/components/tracker/NeedWantRatio";
 import type { Transaction } from "@/components/tracker/TransactionFeed";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Dashboard — MrBottomLine Tracker",
 };
