@@ -239,18 +239,20 @@ export default function AddEntryModal({
       return;
     }
 
-    const payload = {
+    const noteValue = note.trim();
+    const payload: Record<string, unknown> = {
       user_id: user.id,
       wallet_id: walletId || null,
       category_id: categoryId || null,
       amount: parsedAmount,
       description: description.trim(),
-      note: note.trim() || null,
       date,
       entry_type: entryType,
       type: entryType === "income" ? "credit" : "debit",
       is_opening_balance: false,
     };
+    // Only include note if the column exists and has a value
+    if (noteValue) payload.note = noteValue;
     console.log("[AddEntry] inserting:", payload);
 
     const { data: tx, error: txError } = await supabase
@@ -258,6 +260,8 @@ export default function AddEntryModal({
       .insert(payload)
       .select()
       .single();
+
+    console.log("[AddEntry] insert result:", { data: tx, error: txError });
 
     if (txError) {
       setError(txError.message);

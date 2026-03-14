@@ -13,6 +13,7 @@ export const metadata = {
 };
 
 export default async function DashboardPage() {
+  console.log("[Dashboard] rendering at", new Date().toISOString());
   const supabase = await createClient();
 
   const {

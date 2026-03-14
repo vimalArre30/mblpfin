@@ -46,31 +46,33 @@ export async function POST(req: NextRequest) {
   const txDate = date ?? new Date().toISOString().split("T")[0];
   const txDescription = description?.trim() || "Transfer";
 
+  const noteValue = note?.trim() || undefined;
+
   // Insert both legs atomically
   const { error } = await supabase.from("transactions").insert([
     {
       user_id: user.id,
       wallet_id: fromWalletId,
-      amount: -parsedAmount,          // negative = outgoing from source
+      amount: -parsedAmount,
       entry_type: "transfer",
       type: "debit",
       transfer_id: transferId,
       to_wallet_id: toWalletId,
       description: txDescription,
       date: txDate,
-      note: note ?? null,
+      ...(noteValue ? { note: noteValue } : {}),
     },
     {
       user_id: user.id,
       wallet_id: toWalletId,
-      amount: parsedAmount,           // positive = incoming to destination
+      amount: parsedAmount,
       entry_type: "transfer",
       type: "credit",
       transfer_id: transferId,
       to_wallet_id: null,
       description: txDescription,
       date: txDate,
-      note: note ?? null,
+      ...(noteValue ? { note: noteValue } : {}),
     },
   ]);
 
