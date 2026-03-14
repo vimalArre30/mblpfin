@@ -19,7 +19,7 @@ import type { Wallet } from "@/components/tracker/CreateWalletModal";
 import TrackerNav from "@/components/tracker/TrackerNav";
 
 interface Props {
-  stats: { totalSpent: number; thisMonth: number; walletCount: number };
+  stats: { totalIncome: number; totalExpense: number; netBalance: number; walletCount: number };
   chartData: CategorySpend[];
   monthlyData: MonthlyDataPoint[];
   needWant: NeedWantData;
@@ -48,8 +48,9 @@ export default function DashboardClient({
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 pb-24 space-y-8">
         <StatCards
-          totalSpent={stats.totalSpent}
-          thisMonth={stats.thisMonth}
+          totalIncome={stats.totalIncome}
+          totalExpense={stats.totalExpense}
+          netBalance={stats.netBalance}
           walletCount={stats.walletCount}
         />
 
@@ -75,7 +76,7 @@ export default function DashboardClient({
               <span className="text-base leading-none">+</span> Add Entry
             </button>
           </div>
-          <TransactionFeed transactions={transactions} />
+          <TransactionFeed transactions={transactions} wallets={wallets} />
         </section>
       </main>
 

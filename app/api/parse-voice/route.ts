@@ -3,14 +3,44 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const SYSTEM_TEMPLATE = `You are an expense parsing assistant for an Indian personal finance app.
 
-The user will give you a voice transcript describing an expense.
-Extract and return structured JSON with these fields:
-- amount: number (required — extract from transcript; handle "₹", "rupees", "rs", or a bare number)
-- description: string (required — concise label for what was spent on)
-- category: string (match to one of the provided categories, or "Other" if no match)
-- wallet: string or null (match to one of the provided wallets by name, or null if unclear)
-- date: string (ISO date YYYY-MM-DD — use today's date unless a specific day is mentioned)
-- note: string or null (any extra context from the transcript not captured above, or null)
+The user will give you a voice transcript describing a financial transaction.
+Determine whether it is an income, expense, or wallet-to-wallet transfer. Then extract and return structured JSON.
+
+For INCOME or EXPENSE entries, return:
+{
+  "entry_type": "income" | "expense",
+  "amount": number,
+  "description": string,
+  "category": string,
+  "wallet": string | null,
+  "date": string,
+  "note": string | null
+}
+
+For TRANSFER entries, return:
+{
+  "entry_type": "transfer",
+  "amount": number,
+  "from_wallet": string | null,
+  "to_wallet": string | null,
+  "date": string,
+  "note": string | null
+}
+
+Field rules:
+- entry_type: "income" if money was received (salary, freelance, dividend, refund etc.); "expense" if money was spent; "transfer" if money moved between wallets
+- amount: required — extract from transcript; handle "₹", "rupees", "rs", or a bare number
+- description: concise label for what was transacted (omit for transfers)
+- category: match to one of the provided categories, or "Other" if no match (omit for transfers)
+- wallet / from_wallet: match to one of the provided wallets by name, or null if unclear
+- to_wallet: destination wallet for transfers, or null if unclear
+- date: ISO date YYYY-MM-DD — use today's date unless a specific day is mentioned
+- note: any extra context not captured above, or null
+
+Examples:
+- "received salary 50000" → entry_type: "income"
+- "paid electricity bill 1200" → entry_type: "expense"
+- "transfer 10000 from savings to mortgage" → entry_type: "transfer", from_wallet: "savings", to_wallet: "mortgage"
 
 Return ONLY valid JSON. No explanation. No markdown. No code blocks.
 
@@ -58,7 +88,7 @@ export async function POST(req: NextRequest) {
     const response = await client.messages.create(
       {
         model: "claude-opus-4-6",
-        max_tokens: 256,
+        max_tokens: 300,
         system: systemPrompt,
         messages: [{ role: "user", content: transcript }],
       },
@@ -78,7 +108,7 @@ export async function POST(req: NextRequest) {
     const parsed = JSON.parse(rawText);
     console.log("[parse-voice] parsed:", parsed);
 
-    // Validate that we got at least the required fields
+    // Validate required amount field
     if (parsed.amount === undefined || parsed.amount === null) {
       return NextResponse.json(
         { error: "no_amount", message: "Couldn't find an amount — please fill it in" },

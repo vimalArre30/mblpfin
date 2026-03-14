@@ -7,6 +7,7 @@ import VoiceRecorder from "./VoiceRecorder";
 
 type Category = { id: string; name: string; icon: string | null };
 type Label = { id: string; name: string; color: string | null };
+type EntryType = "income" | "expense" | "transfer";
 
 export default function AddEntryModal({
   wallets,
@@ -17,11 +18,13 @@ export default function AddEntryModal({
   onCreated: () => void;
   onClose: () => void;
 }) {
+  const [entryType, setEntryType] = useState<EntryType>("expense");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [note, setNote] = useState("");
   const [walletId, setWalletId] = useState(wallets[0]?.id ?? "");
+  const [toWalletId, setToWalletId] = useState(wallets[1]?.id ?? wallets[0]?.id ?? "");
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
 
@@ -34,6 +37,7 @@ export default function AddEntryModal({
   const [parsing, setParsing] = useState(false);
   const [parseError, setParseError] = useState("");
 
+  const [walletMatchError, setWalletMatchError] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -100,20 +104,34 @@ export default function AddEntryModal({
       if (data.note) setNote(data.note);
       if (data.date) setDate(data.date);
 
+      // Set entry type
+      if (data.entry_type && ["income", "expense", "transfer"].includes(data.entry_type)) {
+        setEntryType(data.entry_type as EntryType);
+      }
+
+      // Match from_wallet / wallet by name (case-insensitive)
+      const fromWalletName = data.from_wallet ?? data.wallet;
+      if (fromWalletName) {
+        const match = wallets.find(
+          (w) => w.name.toLowerCase() === fromWalletName.toLowerCase()
+        );
+        if (match) setWalletId(match.id);
+      }
+
+      // Match to_wallet for transfers
+      if (data.to_wallet) {
+        const match = wallets.find(
+          (w) => w.name.toLowerCase() === data.to_wallet.toLowerCase()
+        );
+        if (match) setToWalletId(match.id);
+      }
+
       // Match category by name (case-insensitive)
-      if (data.category) {
+      if (data.category && data.entry_type !== "transfer") {
         const match = categories.find(
           (c) => c.name.toLowerCase() === data.category.toLowerCase()
         );
         if (match) setCategoryId(match.id);
-      }
-
-      // Match wallet by name (case-insensitive)
-      if (data.wallet) {
-        const match = wallets.find(
-          (w) => w.name.toLowerCase() === data.wallet.toLowerCase()
-        );
-        if (match) setWalletId(match.id);
       }
     } catch {
       setParseError("Couldn't reach the server — please fill in manually");
@@ -130,14 +148,53 @@ export default function AddEntryModal({
       setError("Enter a valid amount greater than 0.");
       return;
     }
-    if (!description.trim()) {
-      setError("Description is required.");
-      return;
+
+    if (entryType === "transfer") {
+      if (!walletId || !toWalletId) {
+        setError("Select both source and destination wallets.");
+        return;
+      }
+      if (walletId === toWalletId) {
+        setWalletMatchError("From and To wallets must be different.");
+        return;
+      }
+    } else {
+      if (!description.trim()) {
+        setError("Description is required.");
+        return;
+      }
     }
 
     setError("");
     setLoading(true);
 
+    if (entryType === "transfer") {
+      // Call atomic transfer API
+      const res = await fetch("/api/tracker/transfer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fromWalletId: walletId,
+          toWalletId,
+          amount: parsedAmount,
+          description: description.trim() || "Transfer",
+          date,
+          note: note.trim() || null,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Transfer failed — please try again.");
+        setLoading(false);
+        return;
+      }
+
+      onCreated();
+      return;
+    }
+
+    // Income or Expense
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -158,6 +215,8 @@ export default function AddEntryModal({
         description: description.trim(),
         note: note.trim() || null,
         date,
+        entry_type: entryType,
+        type: entryType === "income" ? "credit" : "debit",
       })
       .select()
       .single();
@@ -178,6 +237,8 @@ export default function AddEntryModal({
 
     onCreated();
   }
+
+  const isTransfer = entryType === "transfer";
 
   return (
     <div
@@ -202,6 +263,42 @@ export default function AddEntryModal({
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
+
+            {/* Entry Type Toggle */}
+            <div>
+              <label className="block text-xs font-medium text-white/50 mb-2">
+                Type
+              </label>
+              <div className="flex gap-1 bg-white/8 rounded-xl p-1">
+                {(["expense", "income", "transfer"] as EntryType[]).map((t) => {
+                  const labels = { expense: "Expense", income: "Income", transfer: "Transfer" };
+                  const activeClass =
+                    t === "income"
+                      ? "bg-green-500/20 text-green-300 border border-green-500/30"
+                      : t === "expense"
+                      ? "bg-red-500/20 text-red-300 border border-red-500/30"
+                      : "bg-blue-500/20 text-blue-300 border border-blue-500/30";
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => {
+                        setEntryType(t);
+                        setError("");
+                      }}
+                      className={`flex-1 py-2 text-xs font-semibold rounded-lg transition ${
+                        entryType === t
+                          ? activeClass
+                          : "text-white/40 hover:text-white/60"
+                      }`}
+                    >
+                      {labels[t]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Amount */}
             <div>
               <label className="block text-xs font-medium text-white/50 mb-1.5">
@@ -228,10 +325,71 @@ export default function AddEntryModal({
               </div>
             </div>
 
-            {/* Description */}
+            {/* Transfer: From + To Wallets */}
+            {isTransfer && wallets.length >= 2 && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-white/50 mb-1.5">
+                    From Wallet
+                  </label>
+                  <select
+                    value={walletId}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setWalletId(val);
+                      setWalletMatchError(val === toWalletId ? "From and To wallets must be different." : "");
+                      setError("");
+                    }}
+                    className="w-full bg-[#0F1E40] border border-white/15 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition"
+                  >
+                    {wallets.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.emoji ?? ""} {w.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-white/50 mb-1.5">
+                    To Wallet
+                  </label>
+                  <select
+                    value={toWalletId}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setToWalletId(val);
+                      setWalletMatchError(val === walletId ? "From and To wallets must be different." : "");
+                      setError("");
+                    }}
+                    className="w-full bg-[#0F1E40] border border-white/15 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition"
+                  >
+                    {wallets.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.emoji ?? ""} {w.name}
+                      </option>
+                    ))}
+                  </select>
+                  {walletMatchError && (
+                    <p className="mt-1.5 text-xs text-red-400/90">
+                      {walletMatchError}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {isTransfer && wallets.length < 2 && (
+              <p className="text-xs text-amber-400/80 bg-amber-400/8 border border-amber-400/15 rounded-lg px-3 py-2">
+                You need at least 2 wallets to make a transfer.
+              </p>
+            )}
+
+            {/* Description (hidden for transfer if empty — but still present) */}
             <div>
               <label className="block text-xs font-medium text-white/50 mb-1.5">
-                Description <span className="text-red-400">*</span>
+                {isTransfer ? "Note" : "Description"}{" "}
+                {!isTransfer && <span className="text-red-400">*</span>}
+                {isTransfer && <span className="text-white/25 font-normal">(optional)</span>}
               </label>
               <input
                 type="text"
@@ -240,80 +398,116 @@ export default function AddEntryModal({
                   setDescription(e.target.value);
                   setError("");
                 }}
-                placeholder="e.g. Lunch at Bombay Canteen"
+                placeholder={isTransfer ? "e.g. Moving savings to mortgage" : "e.g. Lunch at Bombay Canteen"}
                 className="w-full bg-white/10 border border-white/15 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition"
               />
             </div>
 
-            {/* Voice input */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-medium text-white/50">
-                  Voice Input{" "}
-                  <span className="text-white/25 font-normal">(optional)</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowVoice((v) => !v)}
-                  className={`flex items-center gap-1 text-xs rounded-lg px-2.5 py-1 transition ${
-                    showVoice
-                      ? "bg-white/12 text-white/80"
-                      : "text-white/35 hover:text-white/60 hover:bg-white/8"
-                  }`}
-                >
-                  <span>🎙️</span>
-                  <span>{showVoice ? "Hide" : "Open"}</span>
-                </button>
-              </div>
-
-              {showVoice && (
-                <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                  <VoiceRecorder onUse={parseVoice} />
-                </div>
-              )}
-
-              {/* Parsing loader */}
-              {parsing && (
-                <div className="mt-2 flex items-center gap-2.5 text-xs text-white/50 bg-white/5 border border-white/10 rounded-lg px-3 py-2.5">
-                  <svg className="animate-spin w-3.5 h-3.5 shrink-0 text-white/40" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                  </svg>
-                  Parsing with AI…
-                </div>
-              )}
-
-              {/* Parse error */}
-              {parseError && !parsing && (
-                <p className="mt-2 text-xs text-amber-400/80 bg-amber-400/8 border border-amber-400/15 rounded-lg px-3 py-2">
-                  {parseError}
-                </p>
-              )}
-
-              {/* Raw transcript (read-only, shown after parse) */}
-              {voiceTranscript && !showVoice && !parsing && (
-                <div className="mt-2 relative">
-                  <p className="text-xs text-white/25 mb-1">Voice input (raw)</p>
-                  <div className="bg-white/6 border border-white/12 rounded-lg px-3 py-2 pr-8 text-sm text-white/55 leading-relaxed italic">
-                    "{voiceTranscript}"
-                  </div>
+            {/* Voice input (hidden for transfer) */}
+            {!isTransfer && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-medium text-white/50">
+                    Voice Input{" "}
+                    <span className="text-white/25 font-normal">(optional)</span>
+                  </label>
                   <button
                     type="button"
-                    onClick={() => {
-                      setVoiceTranscript("");
-                      setParseError("");
-                    }}
-                    className="absolute top-6 right-2 text-white/25 hover:text-white/60 transition text-xs"
-                    aria-label="Clear voice transcript"
+                    onClick={() => setShowVoice((v) => !v)}
+                    className={`flex items-center gap-1 text-xs rounded-lg px-2.5 py-1 transition ${
+                      showVoice
+                        ? "bg-white/12 text-white/80"
+                        : "text-white/35 hover:text-white/60 hover:bg-white/8"
+                    }`}
                   >
-                    ✕
+                    <span>🎙️</span>
+                    <span>{showVoice ? "Hide" : "Open"}</span>
                   </button>
                 </div>
-              )}
-            </div>
 
-            {/* Date + Wallet */}
-            <div className="grid grid-cols-2 gap-3">
+                {showVoice && (
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                    <VoiceRecorder onUse={parseVoice} />
+                  </div>
+                )}
+
+                {parsing && (
+                  <div className="mt-2 flex items-center gap-2.5 text-xs text-white/50 bg-white/5 border border-white/10 rounded-lg px-3 py-2.5">
+                    <svg className="animate-spin w-3.5 h-3.5 shrink-0 text-white/40" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                    </svg>
+                    Parsing with AI…
+                  </div>
+                )}
+
+                {parseError && !parsing && (
+                  <p className="mt-2 text-xs text-amber-400/80 bg-amber-400/8 border border-amber-400/15 rounded-lg px-3 py-2">
+                    {parseError}
+                  </p>
+                )}
+
+                {voiceTranscript && !showVoice && !parsing && (
+                  <div className="mt-2 relative">
+                    <p className="text-xs text-white/25 mb-1">Voice input (raw)</p>
+                    <div className="bg-white/6 border border-white/12 rounded-lg px-3 py-2 pr-8 text-sm text-white/55 leading-relaxed italic">
+                      "{voiceTranscript}"
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVoiceTranscript("");
+                        setParseError("");
+                      }}
+                      className="absolute top-6 right-2 text-white/25 hover:text-white/60 transition text-xs"
+                      aria-label="Clear voice transcript"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Date + Wallet (for income/expense) */}
+            {!isTransfer && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-white/50 mb-1.5">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full bg-white/10 border border-white/15 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition [color-scheme:dark]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-white/50 mb-1.5">
+                    Wallet
+                  </label>
+                  {wallets.length === 0 ? (
+                    <p className="text-xs text-white/30 pt-2.5">No wallets yet</p>
+                  ) : (
+                    <select
+                      value={walletId}
+                      onChange={(e) => setWalletId(e.target.value)}
+                      className="w-full bg-[#0F1E40] border border-white/15 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition"
+                    >
+                      {wallets.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.emoji ?? ""} {w.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Date for transfer */}
+            {isTransfer && (
               <div>
                 <label className="block text-xs font-medium text-white/50 mb-1.5">
                   Date
@@ -325,30 +519,10 @@ export default function AddEntryModal({
                   className="w-full bg-white/10 border border-white/15 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition [color-scheme:dark]"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-white/50 mb-1.5">
-                  Wallet
-                </label>
-                {wallets.length === 0 ? (
-                  <p className="text-xs text-white/30 pt-2.5">No wallets yet</p>
-                ) : (
-                  <select
-                    value={walletId}
-                    onChange={(e) => setWalletId(e.target.value)}
-                    className="w-full bg-[#0F1E40] border border-white/15 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition"
-                  >
-                    {wallets.map((w) => (
-                      <option key={w.id} value={w.id}>
-                        {w.emoji ?? ""} {w.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            </div>
+            )}
 
-            {/* Category chips */}
-            {!dataLoading && categories.length > 0 && (
+            {/* Category chips (income/expense only) */}
+            {!isTransfer && !dataLoading && categories.length > 0 && (
               <div>
                 <label className="block text-xs font-medium text-white/50 mb-2">
                   Category
@@ -378,8 +552,8 @@ export default function AddEntryModal({
               </div>
             )}
 
-            {/* Label chips */}
-            {!dataLoading && labels.length > 0 && (
+            {/* Label chips (income/expense only) */}
+            {!isTransfer && !dataLoading && labels.length > 0 && (
               <div>
                 <label className="block text-xs font-medium text-white/50 mb-2">
                   Labels{" "}
@@ -413,20 +587,22 @@ export default function AddEntryModal({
               </div>
             )}
 
-            {/* Note */}
-            <div>
-              <label className="block text-xs font-medium text-white/50 mb-1.5">
-                Note{" "}
-                <span className="text-white/25 font-normal">(optional)</span>
-              </label>
-              <textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Any extra context..."
-                rows={2}
-                className="w-full bg-white/10 border border-white/15 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition resize-none"
-              />
-            </div>
+            {/* Note (income/expense only) */}
+            {!isTransfer && (
+              <div>
+                <label className="block text-xs font-medium text-white/50 mb-1.5">
+                  Note{" "}
+                  <span className="text-white/25 font-normal">(optional)</span>
+                </label>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Any extra context..."
+                  rows={2}
+                  className="w-full bg-white/10 border border-white/15 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition resize-none"
+                />
+              </div>
+            )}
 
             {error && (
               <p className="text-red-400 text-xs bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
@@ -446,10 +622,16 @@ export default function AddEntryModal({
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (isTransfer && walletId === toWalletId)}
               className="flex-1 bg-white text-[#0F1E40] text-sm font-semibold rounded-xl py-2.5 hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
-              {loading ? "Saving..." : "Log Entry"}
+              {loading
+                ? isTransfer
+                  ? "Transferring..."
+                  : "Saving..."
+                : isTransfer
+                ? "Transfer"
+                : "Log Entry"}
             </button>
           </div>
         </form>

@@ -7,6 +7,16 @@ import { createClient } from "@/lib/supabase/client";
 type OtpStep = "phone" | "otp";
 type PhoneStatus = "idle" | "sending" | "sent" | "verifying";
 
+const COUNTRY_CODES = [
+  { label: "🇮🇳 +91",  value: "+91"  },
+  { label: "🇺🇸 +1",   value: "+1"   },
+  { label: "🇸🇬 +65",  value: "+65"  },
+  { label: "🇦🇪 +971", value: "+971" },
+  { label: "🇲🇾 +60",  value: "+60"  },
+  { label: "🇦🇺 +61",  value: "+61"  },
+  { label: "🇬🇧 +44",  value: "+44"  },
+];
+
 const INPUT =
   "w-full bg-white/10 border border-white/15 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition disabled:opacity-60";
 
@@ -17,7 +27,8 @@ export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  const [phone, setPhone] = useState("+91");
+  const [countryCode, setCountryCode] = useState("+91");
+  const [localNumber, setLocalNumber] = useState("");
   const [otp, setOtp] = useState("");
   const [otpStep, setOtpStep] = useState<OtpStep>("phone");
   const [phoneStatus, setPhoneStatus] = useState<PhoneStatus>("idle");
@@ -26,6 +37,9 @@ export default function LoginPage() {
   const [phoneResendCooldown, setPhoneResendCooldown] = useState(0);
 
   const phoneOtpRef = useRef<HTMLInputElement>(null);
+
+  // Combined phone used for all Supabase calls
+  const phone = countryCode + localNumber.trim();
 
   useEffect(() => {
     if (phoneResendCooldown <= 0) return;
@@ -37,35 +51,28 @@ export default function LoginPage() {
     if (otpStep === "otp") phoneOtpRef.current?.focus();
   }, [otpStep]);
 
-  const isValidPhone = /^\+[1-9]\d{7,14}$/.test(phone.trim());
+  const isValidPhone = /^\+[1-9]\d{7,14}$/.test(phone);
 
   async function handleSendOtp() {
     if (!isValidPhone) {
-      setPhoneError(
-        "Enter a valid phone number with country code (e.g. +91XXXXXXXXXX)"
-      );
+      setPhoneError("Enter a valid local number (digits only, no country code).");
       return;
     }
     setPhoneError("");
     setPhoneStatus("sending");
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: phone.trim(),
-      });
+      const { error } = await supabase.auth.signInWithOtp({ phone });
       if (error) { setPhoneError(error.message); setPhoneStatus("idle"); return; }
-      const p = phone.trim();
       const masked =
-        p.length > 4
-          ? p.slice(0, 3) + "X".repeat(p.length - 7) + p.slice(-4)
-          : p;
+        phone.length > 4
+          ? phone.slice(0, 3) + "X".repeat(phone.length - 7) + phone.slice(-4)
+          : phone;
       setOtpSentMessage(`OTP sent to ${masked}`);
       setOtpStep("otp");
       setPhoneStatus("sent");
       setPhoneResendCooldown(30);
     } catch (err: unknown) {
-      setPhoneError(
-        err instanceof Error ? err.message : "Failed to send OTP."
-      );
+      setPhoneError(err instanceof Error ? err.message : "Failed to send OTP.");
       setPhoneStatus("idle");
     }
   }
@@ -77,7 +84,7 @@ export default function LoginPage() {
     setPhoneStatus("verifying");
     try {
       const { data, error } = await supabase.auth.verifyOtp({
-        phone: phone.trim(),
+        phone,
         token,
         type: "sms",
       });
@@ -93,15 +100,12 @@ export default function LoginPage() {
         return;
       }
       if (data.user && data.session) {
-        // Always call seed — the route is idempotent and skips if already seeded
         await fetch("/api/tracker/seed-user", { method: "POST" });
         router.push("/tracker/dashboard");
         router.refresh();
       }
     } catch (err: unknown) {
-      setPhoneError(
-        err instanceof Error ? err.message : "Verification failed."
-      );
+      setPhoneError(err instanceof Error ? err.message : "Verification failed.");
       setPhoneStatus("sent");
     }
   }
@@ -146,24 +150,44 @@ export default function LoginPage() {
           <div className="space-y-4">
             <div>
               <label
-                htmlFor="phone"
+                htmlFor="local-number"
                 className="block text-xs font-medium text-white/50 mb-1.5"
               >
                 Phone number
               </label>
-              <input
-                id="phone"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                value={phone}
-                onChange={(e) => {
-                  setPhone(e.target.value);
-                  setPhoneError("");
-                }}
-                placeholder="+91XXXXXXXXXX"
-                className={INPUT}
-              />
+              <div className="flex gap-2">
+                {/* Country code dropdown */}
+                <select
+                  value={countryCode}
+                  onChange={(e) => {
+                    setCountryCode(e.target.value);
+                    setPhoneError("");
+                  }}
+                  className="flex-shrink-0 bg-white/10 border border-white/15 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition [color-scheme:dark]"
+                  aria-label="Country code"
+                >
+                  {COUNTRY_CODES.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Local number */}
+                <input
+                  id="local-number"
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  value={localNumber}
+                  onChange={(e) => {
+                    setLocalNumber(e.target.value.replace(/\D/g, ""));
+                    setPhoneError("");
+                  }}
+                  placeholder="9876543210"
+                  className={INPUT}
+                />
+              </div>
             </div>
 
             {phoneError && <ErrorBanner>{phoneError}</ErrorBanner>}

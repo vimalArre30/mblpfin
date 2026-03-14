@@ -1,9 +1,14 @@
+import type { Wallet } from "./CreateWalletModal";
+
 export interface Transaction {
   id: string;
   amount: number;
   description: string;
   date: string;
   type: string;
+  entry_type: string | null;
+  transfer_id: string | null;
+  to_wallet_id: string | null;
   wallets: { name: string; emoji: string; color: string } | null;
   categories: { name: string } | null;
   transaction_labels: { labels: { name: string } | null }[] | null;
@@ -38,8 +43,10 @@ function formatGroupHeader(dateStr: string): string {
 
 export default function TransactionFeed({
   transactions,
+  wallets = [],
 }: {
   transactions: Transaction[];
+  wallets?: Wallet[];
 }) {
   if (transactions.length === 0) {
     return (
@@ -70,7 +77,7 @@ export default function TransactionFeed({
           {/* Rows */}
           <div className="space-y-2">
             {groups[date].map((tx) => (
-              <TxRow key={tx.id} tx={tx} />
+              <TxRow key={tx.id} tx={tx} wallets={wallets} />
             ))}
           </div>
         </div>
@@ -79,7 +86,11 @@ export default function TransactionFeed({
   );
 }
 
-function TxRow({ tx }: { tx: Transaction }) {
+function TxRow({ tx, wallets }: { tx: Transaction; wallets: Wallet[] }) {
+  const entryType = tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
+  const isTransfer = entryType === "transfer";
+  const isIncome = entryType === "income";
+
   const labels =
     tx.transaction_labels
       ?.map((tl) => tl.labels?.name)
@@ -89,6 +100,41 @@ function TxRow({ tx }: { tx: Transaction }) {
     "en-IN",
     { month: "short", day: "numeric" }
   );
+
+  const absAmount = Math.abs(Number(tx.amount));
+  const formattedAmount = absAmount.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  // For transfers: resolve destination wallet from wallets list
+  const toWallet = tx.to_wallet_id
+    ? wallets.find((w) => w.id === tx.to_wallet_id) ?? null
+    : null;
+  const isDebitLeg = isTransfer && Number(tx.amount) < 0;
+  const isCreditLeg = isTransfer && Number(tx.amount) >= 0;
+
+  // Amount display
+  let amountPrefix: string;
+  let amountClass: string;
+  if (isTransfer) {
+    amountPrefix = isDebitLeg ? "−" : "+";
+    amountClass = "text-blue-300";
+  } else if (isIncome) {
+    amountPrefix = "+";
+    amountClass = "text-green-400";
+  } else {
+    amountPrefix = "−";
+    amountClass = "text-red-400";
+  }
+
+  // Transfer description line
+  let transferLabel: string | null = null;
+  if (isDebitLeg) {
+    transferLabel = `↔ Transfer → ${toWallet?.name ?? "another wallet"}`;
+  } else if (isCreditLeg) {
+    transferLabel = `↔ Transfer received`;
+  }
 
   return (
     <div
@@ -103,21 +149,27 @@ function TxRow({ tx }: { tx: Transaction }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-medium text-white truncate">
-            {tx.description}
+            {transferLabel ?? tx.description}
           </span>
-          {tx.categories?.name && (
+          {!isTransfer && tx.categories?.name && (
             <span className="text-xs bg-white/10 text-white/55 rounded-full px-2 py-0.5 shrink-0">
               {tx.categories.name}
             </span>
           )}
-          {labels.map((l) => (
-            <span
-              key={l}
-              className={`text-xs rounded-full px-2 py-0.5 shrink-0 ${LABEL_COLORS[l] ?? "bg-white/10 text-white/55"}`}
-            >
-              {l}
+          {!isTransfer &&
+            labels.map((l) => (
+              <span
+                key={l}
+                className={`text-xs rounded-full px-2 py-0.5 shrink-0 ${LABEL_COLORS[l] ?? "bg-white/10 text-white/55"}`}
+              >
+                {l}
+              </span>
+            ))}
+          {isTransfer && (
+            <span className="text-xs bg-blue-500/15 text-blue-300 border border-blue-500/20 rounded-full px-2 py-0.5 shrink-0">
+              Transfer
             </span>
-          ))}
+          )}
         </div>
         {tx.wallets && (
           <p className="text-xs text-white/30 mt-0.5">
@@ -128,16 +180,8 @@ function TxRow({ tx }: { tx: Transaction }) {
 
       {/* Right: amount + date */}
       <div className="text-right shrink-0">
-        <p
-          className={`font-bold text-sm ${
-            tx.type === "credit" ? "text-green-400" : "text-white"
-          }`}
-        >
-          {tx.type === "credit" ? "+" : "-"}₹
-          {Number(tx.amount).toLocaleString("en-IN", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}
+        <p className={`font-bold text-sm ${amountClass}`}>
+          {amountPrefix}₹{formattedAmount}
         </p>
         <p className="text-xs text-white/25 mt-0.5">{displayDate}</p>
       </div>

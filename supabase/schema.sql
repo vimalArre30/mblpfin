@@ -130,3 +130,26 @@ insert into labels (name, color, user_id) values
   ('Investment',  '#16A34A', null),
   ('Savings',     '#7C3AED', null)
 on conflict do nothing;
+
+
+-- ============================================================
+-- MIGRATION: Income/Expense classification + Transfer support
+-- Safe to re-run: uses IF NOT EXISTS / IF EXISTS guards
+-- Run in Supabase SQL Editor after the schema above
+-- ============================================================
+
+-- 1. Add entry_type column (income | expense | transfer), default expense
+alter table transactions
+  add column if not exists entry_type text not null default 'expense'
+    check (entry_type in ('income', 'expense', 'transfer'));
+
+-- 2. Backfill existing rows
+update transactions set entry_type = 'expense' where entry_type = 'expense';
+
+-- 3. transfer_id — both legs of a transfer share this UUID
+alter table transactions
+  add column if not exists transfer_id uuid;
+
+-- 4. to_wallet_id — populated on the debit leg only
+alter table transactions
+  add column if not exists to_wallet_id uuid references wallets(id) on delete set null;

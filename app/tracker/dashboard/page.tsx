@@ -20,7 +20,7 @@ export default async function DashboardPage() {
 
   if (!user) redirect("/tracker/login");
 
-  // Fetch transactions with joined data
+  // Fetch transactions with joined data (including destination wallet for transfers)
   const { data: rawTransactions } = await supabase
     .from("transactions")
     .select(
@@ -35,7 +35,7 @@ export default async function DashboardPage() {
 
   const transactions: Transaction[] = (rawTransactions ?? []) as Transaction[];
 
-  // Fetch wallets for AddEntryModal
+  // Fetch wallets for AddEntryModal + transfer destination lookup
   const { data: wallets } = await supabase
     .from("wallets")
     .select("id, name, emoji, color, created_at")
@@ -43,12 +43,9 @@ export default async function DashboardPage() {
 
   // --- Compute stats ---
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString()
-    .split("T")[0];
 
-  let totalSpent = 0;
-  let thisMonth = 0;
+  let totalIncome = 0;
+  let totalExpense = 0;
   let needTotal = 0;
   let wantTotal = 0;
 
@@ -62,35 +59,45 @@ export default async function DashboardPage() {
 
   for (const tx of transactions) {
     const amount = Number(tx.amount);
-    if (tx.type === "credit") continue;
+    const entryType = tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
 
-    totalSpent += amount;
-    if (tx.date >= startOfMonth) thisMonth += amount;
+    // Skip transfers entirely — they don't count toward income or expense
+    if (entryType === "transfer") continue;
 
-    // Category totals
+    if (entryType === "income") {
+      totalIncome += Math.abs(amount);
+      continue;
+    }
+
+    // Expense
+    totalExpense += Math.abs(amount);
+
+    // Category totals (expenses only)
     if (tx.categories?.name) {
       const n = tx.categories.name;
       if (!categoryTotals[n]) categoryTotals[n] = { name: n, total: 0 };
-      categoryTotals[n].total += amount;
+      categoryTotals[n].total += Math.abs(amount);
     }
 
-    // Monthly totals (last 6 months)
+    // Monthly totals — last 6 months (expenses only)
     if (tx.date >= sixMonthsAgo) {
       const d = new Date(tx.date + "T00:00:00");
       const sortKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       const month = d.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
       if (!monthlyMap[sortKey]) monthlyMap[sortKey] = { month, total: 0 };
-      monthlyMap[sortKey].total += amount;
+      monthlyMap[sortKey].total += Math.abs(amount);
     }
 
-    // Need vs Want
+    // Need vs Want (expenses only)
     const labelNames =
       tx.transaction_labels
         ?.map((tl) => tl.labels?.name)
         .filter((n): n is string => Boolean(n)) ?? [];
-    if (labelNames.includes("Need")) needTotal += amount;
-    if (labelNames.includes("Want")) wantTotal += amount;
+    if (labelNames.includes("Need")) needTotal += Math.abs(amount);
+    if (labelNames.includes("Want")) wantTotal += Math.abs(amount);
   }
+
+  const netBalance = totalIncome - totalExpense;
 
   const chartData: CategorySpend[] = Object.values(categoryTotals)
     .sort((a, b) => b.total - a.total)
@@ -123,7 +130,7 @@ export default async function DashboardPage() {
       </header>
 
       <DashboardClient
-        stats={{ totalSpent, thisMonth, walletCount }}
+        stats={{ totalIncome, totalExpense, netBalance, walletCount }}
         chartData={chartData}
         monthlyData={monthlyData}
         needWant={needWant}
