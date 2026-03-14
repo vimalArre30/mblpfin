@@ -22,8 +22,6 @@ export default async function WalletsPage() {
     .select("*")
     .order("created_at");
 
-  console.log("[Wallets] fetched wallets:", wallets?.length, wallets);
-
   return (
     <WalletsClient
       initialWallets={wallets ?? []}

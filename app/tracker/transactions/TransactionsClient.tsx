@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import AddEntryModal from "@/components/tracker/AddEntryModal";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
 
@@ -38,28 +38,19 @@ export default function TransactionsClient({
   initialTransactions: TransactionRow[];
   wallets: Wallet[];
 }) {
-  const [transactions, setTransactions] =
-    useState<TransactionRow[]>(initialTransactions);
+  const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState(false);
 
-  const supabase = createClient();
-
-  const refreshTransactions = useCallback(async () => {
-    const { data } = await supabase
-      .from("transactions")
-      .select("*, categories(name, icon), wallets(name, emoji, color)")
-      .order("date", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(50);
-    if (data) setTransactions(data as TransactionRow[]);
-  }, [supabase]);
+  // Use server-passed prop directly — router.refresh() re-runs the server
+  // component and React delivers fresh props on each refresh.
+  const transactions = initialTransactions;
 
   function handleCreated() {
     setShowModal(false);
     setToast(true);
     setTimeout(() => setToast(false), 3000);
-    refreshTransactions();
+    router.refresh();
   }
 
   return (

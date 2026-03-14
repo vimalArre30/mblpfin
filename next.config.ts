@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname),
   },
+  experimental: {
+    staleTimes: {
+      dynamic: 0, // never serve stale RSC payload for dynamic routes
+    },
+  },
 };
 
 export default nextConfig;

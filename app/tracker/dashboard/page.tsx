@@ -34,8 +34,6 @@ export default async function DashboardPage() {
     )
     .order("date", { ascending: false });
 
-  console.log("[Dashboard] fetched transactions:", rawTransactions?.length, rawTransactions);
-
   const transactions: Transaction[] = (rawTransactions ?? []) as Transaction[];
 
   // Fetch wallets for AddEntryModal + transfer destination lookup
