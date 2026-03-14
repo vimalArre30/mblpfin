@@ -3,47 +3,20 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import AddEntryModal from "@/components/tracker/AddEntryModal";
+import TransactionFeed, { type Transaction } from "@/components/tracker/TransactionFeed";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
-
-type TransactionRow = {
-  id: string;
-  amount: number;
-  description: string;
-  date: string;
-  note: string | null;
-  categories: { name: string; icon: string | null } | null;
-  wallet: { name: string; emoji: string | null; color: string | null } | null;
-};
-
-function formatAmount(n: number) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 2,
-  }).format(n);
-}
-
-function formatDate(d: string) {
-  return new Date(d + "T00:00:00").toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 export default function TransactionsClient({
   initialTransactions,
   wallets,
 }: {
-  initialTransactions: TransactionRow[];
+  initialTransactions: Transaction[];
   wallets: Wallet[];
 }) {
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState(false);
 
-  // Use server-passed prop directly — router.refresh() re-runs the server
-  // component and React delivers fresh props on each refresh.
   const transactions = initialTransactions;
 
   function handleCreated() {
@@ -94,11 +67,7 @@ export default function TransactionsClient({
             </button>
           </div>
         ) : (
-          <div className="space-y-2">
-            {transactions.map((tx) => (
-              <TransactionRow key={tx.id} tx={tx} />
-            ))}
-          </div>
+          <TransactionFeed transactions={transactions} wallets={wallets} />
         )}
       </main>
 
@@ -127,49 +96,5 @@ export default function TransactionsClient({
         />
       )}
     </>
-  );
-}
-
-function TransactionRow({ tx }: { tx: TransactionRow }) {
-  const walletColor = tx.wallet?.color ?? "#2563EB";
-
-  return (
-    <div
-      className="bg-white/5 border border-white/10 rounded-xl px-5 py-4 flex items-center gap-4 hover:bg-white/[0.08] transition"
-      style={{ borderLeft: `3px solid ${walletColor}` }}
-    >
-      {/* Category icon */}
-      <div className="text-xl w-8 flex-shrink-0 text-center">
-        {tx.categories?.icon ?? "💸"}
-      </div>
-
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <p className="text-white text-sm font-medium truncate">
-          {tx.description}
-        </p>
-        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          {tx.categories?.name && (
-            <span className="text-white/40 text-xs">{tx.categories.name}</span>
-          )}
-          {tx.wallet?.name && (
-            <>
-              <span className="text-white/20 text-xs">·</span>
-              <span className="text-white/40 text-xs">
-                {tx.wallet.emoji ?? ""} {tx.wallet.name}
-              </span>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Right side: amount + date */}
-      <div className="flex-shrink-0 text-right">
-        <p className="text-white font-semibold text-sm">
-          {formatAmount(tx.amount)}
-        </p>
-        <p className="text-white/35 text-xs mt-0.5">{formatDate(tx.date)}</p>
-      </div>
-    </div>
   );
 }

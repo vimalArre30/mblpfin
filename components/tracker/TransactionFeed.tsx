@@ -210,15 +210,17 @@ function TxRow({ tx, wallets }: { tx: Transaction; wallets: Wallet[] }) {
       onTouchEnd={onTouchEnd}
       onClick={() => swiped && setSwiped(false)}
     >
-      {/* Delete button revealed on swipe (mobile) */}
-      <button
-        onClick={(e) => { e.stopPropagation(); handleDelete(); }}
-        disabled={deleting}
-        className="absolute right-0 top-0 bottom-0 w-[70px] flex items-center justify-center bg-red-500 hover:bg-red-600 transition text-white text-sm font-semibold"
-        aria-label="Delete transaction"
-      >
-        {deleting ? "…" : "Delete"}
-      </button>
+      {/* Delete button — only rendered after swipe to avoid iOS overflow-hidden + border-radius clipping bug */}
+      {swiped && (
+        <button
+          onClick={(e) => { e.stopPropagation(); handleDelete(); }}
+          disabled={deleting}
+          className="absolute right-0 top-0 bottom-0 w-[70px] flex items-center justify-center bg-red-500 hover:bg-red-600 transition text-white text-sm font-semibold"
+          aria-label="Delete transaction"
+        >
+          {deleting ? "…" : "Delete"}
+        </button>
+      )}
 
       {/* Row content — slides left on swipe */}
       <div
