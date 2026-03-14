@@ -1,6 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
+const TRANSFER_SYSTEM_TEMPLATE = `You are a financial assistant. The user has just spoken a transfer instruction.
+Extract the following from their transcript and return ONLY valid JSON:
+{
+  "entry_type": "transfer",
+  "from_wallet": "<wallet name from the list or null>",
+  "to_wallet": "<wallet name from the list or null>",
+  "amount": <number, no currency symbols>
+}
+
+Available wallet names: {walletNames}
+
+Match spoken wallet names to the closest name in the list (fuzzy, case-insensitive).
+If amount is spoken as words, convert to number ("twenty thousand" → 20000).
+Handle "₹", "rupees", "rs", or a bare number for the amount.
+
+Examples:
+- "transfer 20000 from mortgage to savings" → { "entry_type": "transfer", "from_wallet": "Mortgage", "to_wallet": "Savings", "amount": 20000 }
+- "move 5000 from checking to credit card" → { "entry_type": "transfer", "from_wallet": "Checking Account", "to_wallet": "Credit Card", "amount": 5000 }
+
+Return only the JSON object, no explanation, no markdown, no code blocks.`;
+
 const SYSTEM_TEMPLATE = `You are an expense parsing assistant for an Indian personal finance app.
 
 The user will give you a voice transcript describing a financial transaction.
@@ -57,24 +78,30 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { transcript?: string; categories?: string[]; wallets?: string[] };
+  let body: { transcript?: string; categories?: string[]; wallets?: string[]; mode?: string; walletNames?: string[] };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { transcript, categories = [], wallets = [] } = body;
+  const { transcript, categories = [], wallets = [], mode, walletNames = [] } = body;
 
   if (!transcript?.trim()) {
     return NextResponse.json({ error: "No transcript provided" }, { status: 400 });
   }
 
   const today = new Date().toISOString().split("T")[0];
-  const systemPrompt = SYSTEM_TEMPLATE
-    .replace("{categories}", categories.length ? categories.join(", ") : "Food, Travel, Utilities, Health, Entertainment, Shopping, Investment, Other")
-    .replace("{wallets}", wallets.length ? wallets.join(", ") : "None provided")
-    .replace("{today}", today);
+
+  const systemPrompt = mode === "transfer"
+    ? TRANSFER_SYSTEM_TEMPLATE.replace(
+        "{walletNames}",
+        walletNames.length ? walletNames.join(", ") : "None provided"
+      )
+    : SYSTEM_TEMPLATE
+        .replace("{categories}", categories.length ? categories.join(", ") : "Food, Travel, Utilities, Health, Entertainment, Shopping, Investment, Other")
+        .replace("{wallets}", wallets.length ? wallets.join(", ") : "None provided")
+        .replace("{today}", today);
 
   console.log("[parse-voice] transcript:", transcript);
 

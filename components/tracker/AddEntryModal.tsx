@@ -38,6 +38,8 @@ export default function AddEntryModal({
   const [parseError, setParseError] = useState("");
 
   const [walletMatchError, setWalletMatchError] = useState("");
+  const [fromWalletUnmatched, setFromWalletUnmatched] = useState(false);
+  const [toWalletUnmatched, setToWalletUnmatched] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -79,16 +81,27 @@ export default function AddEntryModal({
     setShowVoice(false);
     setParseError("");
     setParsing(true);
+    setFromWalletUnmatched(false);
+    setToWalletUnmatched(false);
 
     try {
+      const isTransferMode = entryType === "transfer";
       const res = await fetch("/api/parse-voice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          transcript,
-          categories: categories.map((c) => c.name),
-          wallets: wallets.map((w) => w.name),
-        }),
+        body: JSON.stringify(
+          isTransferMode
+            ? {
+                transcript,
+                mode: "transfer",
+                walletNames: wallets.map((w) => w.name),
+              }
+            : {
+                transcript,
+                categories: categories.map((c) => c.name),
+                wallets: wallets.map((w) => w.name),
+              }
+        ),
       });
 
       const data = await res.json();
@@ -98,40 +111,58 @@ export default function AddEntryModal({
         return;
       }
 
-      // Auto-fill form fields
+      // Amount (all modes)
       if (data.amount != null) setAmount(String(data.amount));
-      if (data.description) setDescription(data.description);
-      if (data.note) setNote(data.note);
-      if (data.date) setDate(data.date);
 
-      // Set entry type
-      if (data.entry_type && ["income", "expense", "transfer"].includes(data.entry_type)) {
-        setEntryType(data.entry_type as EntryType);
-      }
+      if (isTransferMode) {
+        // Match from_wallet
+        if (data.from_wallet) {
+          const match = wallets.find(
+            (w) => w.name.toLowerCase() === data.from_wallet.toLowerCase()
+          );
+          if (match) {
+            setWalletId(match.id);
+            setFromWalletUnmatched(false);
+          } else {
+            setFromWalletUnmatched(true);
+          }
+        }
+        // Match to_wallet
+        if (data.to_wallet) {
+          const match = wallets.find(
+            (w) => w.name.toLowerCase() === data.to_wallet.toLowerCase()
+          );
+          if (match) {
+            setToWalletId(match.id);
+            setToWalletUnmatched(false);
+          } else {
+            setToWalletUnmatched(true);
+          }
+        }
+      } else {
+        // Income / Expense fields
+        if (data.description) setDescription(data.description);
+        if (data.note) setNote(data.note);
+        if (data.date) setDate(data.date);
 
-      // Match from_wallet / wallet by name (case-insensitive)
-      const fromWalletName = data.from_wallet ?? data.wallet;
-      if (fromWalletName) {
-        const match = wallets.find(
-          (w) => w.name.toLowerCase() === fromWalletName.toLowerCase()
-        );
-        if (match) setWalletId(match.id);
-      }
+        if (data.entry_type && ["income", "expense", "transfer"].includes(data.entry_type)) {
+          setEntryType(data.entry_type as EntryType);
+        }
 
-      // Match to_wallet for transfers
-      if (data.to_wallet) {
-        const match = wallets.find(
-          (w) => w.name.toLowerCase() === data.to_wallet.toLowerCase()
-        );
-        if (match) setToWalletId(match.id);
-      }
+        const fromWalletName = data.from_wallet ?? data.wallet;
+        if (fromWalletName) {
+          const match = wallets.find(
+            (w) => w.name.toLowerCase() === fromWalletName.toLowerCase()
+          );
+          if (match) setWalletId(match.id);
+        }
 
-      // Match category by name (case-insensitive)
-      if (data.category && data.entry_type !== "transfer") {
-        const match = categories.find(
-          (c) => c.name.toLowerCase() === data.category.toLowerCase()
-        );
-        if (match) setCategoryId(match.id);
+        if (data.category) {
+          const match = categories.find(
+            (c) => c.name.toLowerCase() === data.category.toLowerCase()
+          );
+          if (match) setCategoryId(match.id);
+        }
       }
     } catch {
       setParseError("Couldn't reach the server — please fill in manually");
@@ -337,10 +368,11 @@ export default function AddEntryModal({
                     onChange={(e) => {
                       const val = e.target.value;
                       setWalletId(val);
+                      setFromWalletUnmatched(false);
                       setWalletMatchError(val === toWalletId ? "From and To wallets must be different." : "");
                       setError("");
                     }}
-                    className="w-full bg-[#0F1E40] border border-white/15 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition"
+                    className={`w-full bg-[#0F1E40] border rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 transition ${fromWalletUnmatched ? "border-amber-400/60 focus:border-amber-400 focus:ring-amber-400/20" : "border-white/15 focus:border-white/40 focus:ring-white/20"}`}
                   >
                     {wallets.map((w) => (
                       <option key={w.id} value={w.id}>
@@ -348,6 +380,9 @@ export default function AddEntryModal({
                       </option>
                     ))}
                   </select>
+                  {fromWalletUnmatched && (
+                    <p className="mt-1 text-xs text-amber-400/80">Couldn't match — pick manually</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-white/50 mb-1.5">
@@ -358,10 +393,11 @@ export default function AddEntryModal({
                     onChange={(e) => {
                       const val = e.target.value;
                       setToWalletId(val);
+                      setToWalletUnmatched(false);
                       setWalletMatchError(val === walletId ? "From and To wallets must be different." : "");
                       setError("");
                     }}
-                    className="w-full bg-[#0F1E40] border border-white/15 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition"
+                    className={`w-full bg-[#0F1E40] border rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 transition ${toWalletUnmatched ? "border-amber-400/60 focus:border-amber-400 focus:ring-amber-400/20" : "border-white/15 focus:border-white/40 focus:ring-white/20"}`}
                   >
                     {wallets.map((w) => (
                       <option key={w.id} value={w.id}>
@@ -369,6 +405,9 @@ export default function AddEntryModal({
                       </option>
                     ))}
                   </select>
+                  {toWalletUnmatched && (
+                    <p className="mt-1 text-xs text-amber-400/80">Couldn't match — pick manually</p>
+                  )}
                   {walletMatchError && (
                     <p className="mt-1.5 text-xs text-red-400/90">
                       {walletMatchError}
@@ -403,14 +442,13 @@ export default function AddEntryModal({
               />
             </div>
 
-            {/* Voice input (hidden for transfer) */}
-            {!isTransfer && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-medium text-white/50">
-                    Voice Input{" "}
-                    <span className="text-white/25 font-normal">(optional)</span>
-                  </label>
+            {/* Voice input */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-medium text-white/50">
+                  Voice Input{" "}
+                  <span className="text-white/25 font-normal">(optional)</span>
+                </label>
                   <button
                     type="button"
                     onClick={() => setShowVoice((v) => !v)}
@@ -467,7 +505,7 @@ export default function AddEntryModal({
                   </div>
                 )}
               </div>
-            )}
+            </div>
 
             {/* Date + Wallet (for income/expense) */}
             {!isTransfer && (
