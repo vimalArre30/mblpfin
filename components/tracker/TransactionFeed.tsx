@@ -10,7 +10,7 @@ export interface Transaction {
   is_opening_balance: boolean | null;
   transfer_id: string | null;
   to_wallet_id: string | null;
-  wallets: { name: string; emoji: string; color: string } | null;
+  wallet: { name: string; emoji: string; color: string } | null;
   categories: { name: string } | null;
   transaction_labels: { labels: { name: string } | null }[] | null;
 }
@@ -144,8 +144,8 @@ function TxRow({ tx, wallets }: { tx: Transaction; wallets: Wallet[] }) {
       <div
         className="bg-white/[0.03] border border-white/8 rounded-xl px-4 py-3 flex items-start gap-3"
         style={
-          tx.wallets?.color
-            ? { borderLeftColor: tx.wallets.color, borderLeftWidth: 3 }
+          tx.wallet?.color
+            ? { borderLeftColor: tx.wallet.color, borderLeftWidth: 3 }
             : {}
         }
       >
@@ -155,9 +155,9 @@ function TxRow({ tx, wallets }: { tx: Transaction; wallets: Wallet[] }) {
               🏦 Opening Balance
             </span>
           </div>
-          {tx.wallets && (
+          {tx.wallet && (
             <p className="text-xs text-white/25 mt-0.5">
-              {tx.wallets.emoji} {tx.wallets.name}
+              {tx.wallet.emoji} {tx.wallet.name}
             </p>
           )}
         </div>
@@ -175,8 +175,8 @@ function TxRow({ tx, wallets }: { tx: Transaction; wallets: Wallet[] }) {
     <div
       className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 flex items-start gap-3 hover:bg-white/[0.07] transition"
       style={
-        tx.wallets?.color
-          ? { borderLeftColor: tx.wallets.color, borderLeftWidth: 3 }
+        tx.wallet?.color
+          ? { borderLeftColor: tx.wallet.color, borderLeftWidth: 3 }
           : {}
       }
     >
@@ -206,9 +206,9 @@ function TxRow({ tx, wallets }: { tx: Transaction; wallets: Wallet[] }) {
             </span>
           )}
         </div>
-        {tx.wallets && (
+        {tx.wallet && (
           <p className="text-xs text-white/30 mt-0.5">
-            {tx.wallets.emoji} {tx.wallets.name}
+            {tx.wallet.emoji} {tx.wallet.name}
           </p>
         )}
       </div>

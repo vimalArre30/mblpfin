@@ -12,7 +12,7 @@ type TransactionRow = {
   date: string;
   note: string | null;
   categories: { name: string; icon: string | null } | null;
-  wallets: { name: string; emoji: string | null; color: string | null } | null;
+  wallet: { name: string; emoji: string | null; color: string | null } | null;
 };
 
 function formatAmount(n: number) {
@@ -131,7 +131,7 @@ export default function TransactionsClient({
 }
 
 function TransactionRow({ tx }: { tx: TransactionRow }) {
-  const walletColor = tx.wallets?.color ?? "#2563EB";
+  const walletColor = tx.wallet?.color ?? "#2563EB";
 
   return (
     <div
@@ -152,11 +152,11 @@ function TransactionRow({ tx }: { tx: TransactionRow }) {
           {tx.categories?.name && (
             <span className="text-white/40 text-xs">{tx.categories.name}</span>
           )}
-          {tx.wallets?.name && (
+          {tx.wallet?.name && (
             <>
               <span className="text-white/20 text-xs">·</span>
               <span className="text-white/40 text-xs">
-                {tx.wallets.emoji ?? ""} {tx.wallets.name}
+                {tx.wallet.emoji ?? ""} {tx.wallet.name}
               </span>
             </>
           )}

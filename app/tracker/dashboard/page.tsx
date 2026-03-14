@@ -22,18 +22,24 @@ export default async function DashboardPage() {
 
   if (!user) redirect("/tracker/login");
 
+  console.log("[Dashboard] user.id:", user.id);
+
   // Fetch transactions with joined data (including destination wallet for transfers)
-  const { data: rawTransactions } = await supabase
+  const { data: rawTransactions, error: txError } = await supabase
     .from("transactions")
     .select(
       `
       *,
-      wallets(name, emoji, color),
+      wallet:wallets!transactions_wallet_id_fkey(name, emoji, color),
       categories(name),
       transaction_labels(labels(name))
     `
     )
     .order("date", { ascending: false });
+
+  console.log("[Dashboard] txError:", txError);
+  console.log("[Dashboard] rawTransactions count:", rawTransactions?.length ?? 0);
+  if (rawTransactions?.[0]) console.log("[Dashboard] first tx:", JSON.stringify(rawTransactions[0]).slice(0, 200));
 
   const transactions: Transaction[] = (rawTransactions ?? []) as Transaction[];
 

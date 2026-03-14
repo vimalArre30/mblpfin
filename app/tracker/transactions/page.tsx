@@ -21,7 +21,7 @@ export default async function TransactionsPage() {
     supabase.from("wallets").select("*").order("created_at"),
     supabase
       .from("transactions")
-      .select("*, categories(name, icon), wallets(name, emoji, color)")
+      .select("*, categories(name, icon), wallet:wallets!transactions_wallet_id_fkey(name, emoji, color)")
       .order("date", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(50),

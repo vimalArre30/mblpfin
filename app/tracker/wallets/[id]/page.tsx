@@ -32,7 +32,7 @@ export default async function WalletDetailPage({
       .select(
         `
         *,
-        wallets(name, emoji, color),
+        wallet:wallets!transactions_wallet_id_fkey(name, emoji, color),
         categories(name),
         transaction_labels(labels(name))
       `
