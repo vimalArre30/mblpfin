@@ -1,16 +1,19 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Wallet } from "./CreateWalletModal";
+import AddEntryModal, { type EditableTransaction } from "./AddEntryModal";
 
 export interface Transaction {
   id: string;
   wallet_id: string | null;
+  category_id: string | null;
   amount: number;
   description: string;
   date: string;
+  note: string | null;
   type: string;
   entry_type: string | null;
   is_opening_balance: boolean | null;
@@ -18,7 +21,7 @@ export interface Transaction {
   to_wallet_id: string | null;
   wallet: { name: string; emoji: string; color: string } | null;
   categories: { name: string } | null;
-  transaction_labels: { labels: { name: string } | null }[] | null;
+  transaction_labels: { label_id: string; labels: { name: string } | null }[] | null;
 }
 
 const LABEL_COLORS: Record<string, string> = {
@@ -55,6 +58,26 @@ export default function TransactionFeed({
   transactions: Transaction[];
   wallets?: Wallet[];
 }) {
+  const router = useRouter();
+  // Only one row swiped at a time
+  const [swipedId, setSwipedId] = useState<string | null>(null);
+  const [editingTx, setEditingTx] = useState<EditableTransaction | null>(null);
+
+  function handleSwipe(id: string | null) {
+    setSwipedId(id);
+  }
+
+  async function handleDelete(tx: Transaction) {
+    const supabase = createClient();
+    if (tx.transfer_id) {
+      await supabase.from("transactions").delete().eq("transfer_id", tx.transfer_id);
+    } else {
+      await supabase.from("transactions").delete().eq("id", tx.id);
+    }
+    setSwipedId(null);
+    router.refresh();
+  }
+
   if (transactions.length === 0) {
     return (
       <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center">
@@ -70,40 +93,117 @@ export default function TransactionFeed({
   const sortedDates = Object.keys(groups).sort((a, b) => b.localeCompare(a));
 
   return (
-    <div className="space-y-7">
-      {sortedDates.map((date) => (
-        <div key={date}>
-          {/* Date section header */}
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-xs font-semibold text-white/35 uppercase tracking-widest">
-              {formatGroupHeader(date)}
-            </span>
-            <div className="flex-1 h-px bg-white/8" />
+    <>
+      <div
+        className="space-y-7"
+        // Tap on the feed background resets any open swipe
+        onClick={() => swipedId && setSwipedId(null)}
+      >
+        {sortedDates.map((date) => (
+          <div key={date}>
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-xs font-semibold text-white/35 uppercase tracking-widest">
+                {formatGroupHeader(date)}
+              </span>
+              <div className="flex-1 h-px bg-white/8" />
+            </div>
+            <div className="space-y-2">
+              {groups[date].map((tx) => (
+                <TxRow
+                  key={tx.id}
+                  tx={tx}
+                  wallets={wallets}
+                  isSwiped={swipedId === tx.id}
+                  onSwipe={handleSwipe}
+                  onEdit={(t) => { setSwipedId(null); setEditingTx(t); }}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
           </div>
+        ))}
+      </div>
 
-          {/* Rows */}
-          <div className="space-y-2">
-            {groups[date].map((tx) => (
-              <TxRow key={tx.id} tx={tx} wallets={wallets} />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
+      {editingTx && (
+        <AddEntryModal
+          wallets={wallets}
+          editTx={editingTx}
+          onCreated={() => { setEditingTx(null); router.refresh(); }}
+          onClose={() => setEditingTx(null)}
+        />
+      )}
+    </>
   );
 }
 
-function TxRow({ tx, wallets }: { tx: Transaction; wallets: Wallet[] }) {
-  const router = useRouter();
-  const supabase = createClient();
-  const [swiped, setSwiped] = useState(false);
+function TxRow({
+  tx,
+  wallets,
+  isSwiped,
+  onSwipe,
+  onEdit,
+  onDelete,
+}: {
+  tx: Transaction;
+  wallets: Wallet[];
+  isSwiped: boolean;
+  onSwipe: (id: string | null) => void;
+  onEdit: (tx: EditableTransaction) => void;
+  onDelete: (tx: Transaction) => void;
+}) {
   const [deleting, setDeleting] = useState(false);
+  const rowRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  // Keep latest values accessible inside the stable event handler closure
+  const onSwipeRef = useRef(onSwipe);
+  const txIdRef = useRef(tx.id);
+  const isSwipedRef = useRef(isSwiped);
+  onSwipeRef.current = onSwipe;
+  txIdRef.current = tx.id;
+  isSwipedRef.current = isSwiped;
+
+  // Attach native touch listeners so they fire reliably on all mobile browsers
+  useEffect(() => {
+    const el = rowRef.current;
+    if (!el) return;
+
+    function handleTouchStart(e: TouchEvent) {
+      touchStartX.current = e.touches[0].clientX;
+      touchStartY.current = e.touches[0].clientY;
+    }
+
+    function handleTouchEnd(e: TouchEvent) {
+      const dx = touchStartX.current - e.changedTouches[0].clientX;
+      const dy = Math.abs(touchStartY.current - e.changedTouches[0].clientY);
+      // Require a clearly horizontal gesture
+      if (dx > 50 && dx > dy * 1.5) {
+        onSwipeRef.current(txIdRef.current);
+      } else if (dx < -20) {
+        // Right-swipe closes the panel
+        onSwipeRef.current(null);
+      }
+    }
+
+    el.addEventListener("touchstart", handleTouchStart, { passive: true });
+    el.addEventListener("touchend", handleTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", handleTouchStart);
+      el.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, []); // attach once on mount
 
   const isOpeningBalance = tx.is_opening_balance === true;
   const entryType = tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
   const isTransfer = entryType === "transfer";
   const isIncome = entryType === "income";
+  const isDebitLeg = isTransfer && Number(tx.amount) < 0;
+  const isCreditLeg = isTransfer && !isDebitLeg;
+
+  // Credit leg of a transfer can't be edited (can't derive from-wallet)
+  const canEdit = !isCreditLeg;
+  // Action panel width: 130px (edit+delete) or 65px (delete only)
+  const panelW = canEdit ? 130 : 65;
 
   const labels =
     tx.transaction_labels
@@ -121,14 +221,10 @@ function TxRow({ tx, wallets }: { tx: Transaction; wallets: Wallet[] }) {
     maximumFractionDigits: 2,
   });
 
-  // For transfers: resolve destination wallet from wallets list
   const toWallet = tx.to_wallet_id
     ? wallets.find((w) => w.id === tx.to_wallet_id) ?? null
     : null;
-  const isDebitLeg = isTransfer && Number(tx.amount) < 0;
-  const isCreditLeg = isTransfer && Number(tx.amount) >= 0;
 
-  // Amount display
   let amountPrefix: string;
   let amountClass: string;
   if (isTransfer) {
@@ -142,7 +238,6 @@ function TxRow({ tx, wallets }: { tx: Transaction; wallets: Wallet[] }) {
     amountClass = "text-red-400";
   }
 
-  // Transfer description line
   let transferLabel: string | null = null;
   if (isDebitLeg) {
     transferLabel = `↔ Transfer → ${toWallet?.name ?? "another wallet"}`;
@@ -150,150 +245,143 @@ function TxRow({ tx, wallets }: { tx: Transaction; wallets: Wallet[] }) {
     transferLabel = `↔ Transfer received`;
   }
 
-  async function handleDelete() {
+  async function handleDeleteClick(e: React.MouseEvent) {
+    e.stopPropagation();
     setDeleting(true);
-    if (tx.transfer_id) {
-      await supabase.from("transactions").delete().eq("transfer_id", tx.transfer_id);
-    } else {
-      await supabase.from("transactions").delete().eq("id", tx.id);
-    }
-    router.refresh();
+    await onDelete(tx);
+    setDeleting(false);
   }
 
-  function onTouchStart(e: React.TouchEvent) {
-    touchStartX.current = e.touches[0].clientX;
-  }
-
-  function onTouchEnd(e: React.TouchEvent) {
-    const delta = touchStartX.current - e.changedTouches[0].clientX;
-    if (delta > 60) setSwiped(true);
-    else setSwiped(false);
-  }
-
-  // Opening balance rows — muted style, no delete
-  if (isOpeningBalance) {
-    return (
-      <div
-        className="bg-white/[0.03] border border-white/8 rounded-xl px-4 py-3 flex items-start gap-3"
-        style={
-          tx.wallet?.color
-            ? { borderLeftColor: tx.wallet.color, borderLeftWidth: 3 }
-            : {}
-        }
-      >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm italic text-white/50">
-              🏦 Opening Balance
-            </span>
-          </div>
-          {tx.wallet && (
-            <p className="text-xs text-white/25 mt-0.5">
-              {tx.wallet.emoji} {tx.wallet.name}
-            </p>
-          )}
-        </div>
-        <div className="text-right shrink-0">
-          <p className="font-bold text-sm text-green-400/70">
-            +₹{absAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </p>
-          <p className="text-xs text-white/20 mt-0.5">{displayDate}</p>
-        </div>
-      </div>
-    );
-  }
+  const rowStyle = tx.wallet?.color
+    ? { borderLeftColor: tx.wallet.color, borderLeftWidth: 3 }
+    : {};
 
   return (
     <div
+      ref={rowRef}
       className="relative rounded-xl overflow-hidden"
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
-      onClick={() => swiped && setSwiped(false)}
+      onClick={(e) => {
+        // Tapping the row (not an action button) closes the swipe panel
+        if (isSwiped) {
+          e.stopPropagation();
+          onSwipe(null);
+        }
+      }}
     >
-      {/* Delete button — only rendered after swipe to avoid iOS overflow-hidden + border-radius clipping bug */}
-      {swiped && (
-        <button
-          onClick={(e) => { e.stopPropagation(); handleDelete(); }}
-          disabled={deleting}
-          className="absolute right-0 top-0 bottom-0 w-[70px] flex items-center justify-center bg-red-500 hover:bg-red-600 transition text-white text-sm font-semibold"
-          aria-label="Delete transaction"
+      {/* Action panel — revealed on swipe */}
+      {isSwiped && (
+        <div
+          className="absolute right-0 top-0 bottom-0 flex"
+          style={{ width: panelW }}
         >
-          {deleting ? "…" : "Delete"}
-        </button>
+          {canEdit && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(tx); }}
+              className="flex-1 flex items-center justify-center bg-blue-600 hover:bg-blue-500 transition text-white text-xs font-semibold"
+            >
+              Edit
+            </button>
+          )}
+          <button
+            onClick={handleDeleteClick}
+            disabled={deleting}
+            className="flex-1 flex items-center justify-center bg-red-500 hover:bg-red-600 transition text-white text-xs font-semibold disabled:opacity-60"
+          >
+            {deleting ? "…" : "Delete"}
+          </button>
+        </div>
       )}
 
-      {/* Row content — slides left on swipe */}
-      <div
-        className={`group relative bg-white/5 border border-white/10 rounded-xl px-4 py-3 flex items-start gap-3 hover:bg-white/[0.07] transition-transform duration-200 ${
-          swiped ? "-translate-x-[70px]" : "translate-x-0"
-        }`}
-        style={
-          tx.wallet?.color
-            ? { borderLeftColor: tx.wallet.color, borderLeftWidth: 3 }
-            : {}
-        }
-      >
-        {/* Left: description + meta */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium text-white truncate">
-              {transferLabel ?? tx.description}
-            </span>
-            {!isTransfer && tx.categories?.name && (
-              <span className="text-xs bg-white/10 text-white/55 rounded-full px-2 py-0.5 shrink-0">
-                {tx.categories.name}
-              </span>
+      {/* Row content */}
+      {isOpeningBalance ? (
+        <div
+          className="relative bg-white/[0.03] border border-white/8 rounded-xl px-4 py-3 flex items-start gap-3 transition-transform duration-200"
+          style={{ ...rowStyle, transform: isSwiped ? `translateX(-${panelW}px)` : "translateX(0)" }}
+        >
+          <div className="flex-1 min-w-0">
+            <span className="text-sm italic text-white/50">🏦 Opening Balance</span>
+            {tx.wallet && (
+              <p className="text-xs text-white/25 mt-0.5">
+                {tx.wallet.emoji} {tx.wallet.name}
+              </p>
             )}
-            {!isTransfer &&
-              labels.map((l) => (
-                <span
-                  key={l}
-                  className={`text-xs rounded-full px-2 py-0.5 shrink-0 ${LABEL_COLORS[l] ?? "bg-white/10 text-white/55"}`}
-                >
-                  {l}
-                </span>
-              ))}
-            {isTransfer && (
-              <span className="text-xs bg-blue-500/15 text-blue-300 border border-blue-500/20 rounded-full px-2 py-0.5 shrink-0">
-                Transfer
-              </span>
+            {tx.note && (
+              <p className="text-xs text-white/30 mt-0.5 italic">"{tx.note}"</p>
             )}
           </div>
-          {tx.wallet && (
-            <p className="text-xs text-white/30 mt-0.5">
-              {tx.wallet.emoji} {tx.wallet.name}
+          <div className="text-right shrink-0">
+            <p className="font-bold text-sm text-green-400/70">
+              +₹{absAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
-          )}
+            <p className="text-xs text-white/20 mt-0.5">{displayDate}</p>
+          </div>
         </div>
-
-        {/* Right: amount + date + hover delete */}
-        <div className="flex items-start gap-3 shrink-0">
-          <div className="text-right">
-            <p className={`font-bold text-sm ${amountClass}`}>
-              {amountPrefix}₹{formattedAmount}
-            </p>
-            <p className="text-xs text-white/25 mt-0.5">{displayDate}</p>
+      ) : (
+        <div
+          className="group relative bg-white/5 border border-white/10 rounded-xl px-4 py-3 flex items-start gap-3 hover:bg-white/[0.07] transition-transform duration-200"
+          style={{ ...rowStyle, transform: isSwiped ? `translateX(-${panelW}px)` : "translateX(0)" }}
+        >
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-medium text-white truncate">
+                {transferLabel ?? tx.description}
+              </span>
+              {!isTransfer && tx.categories?.name && (
+                <span className="text-xs bg-white/10 text-white/55 rounded-full px-2 py-0.5 shrink-0">
+                  {tx.categories.name}
+                </span>
+              )}
+              {!isTransfer &&
+                labels.map((l) => (
+                  <span
+                    key={l}
+                    className={`text-xs rounded-full px-2 py-0.5 shrink-0 ${
+                      LABEL_COLORS[l] ?? "bg-white/10 text-white/55"
+                    }`}
+                  >
+                    {l}
+                  </span>
+                ))}
+              {isTransfer && (
+                <span className="text-xs bg-blue-500/15 text-blue-300 border border-blue-500/20 rounded-full px-2 py-0.5 shrink-0">
+                  Transfer
+                </span>
+              )}
+            </div>
+            {tx.wallet && (
+              <p className="text-xs text-white/30 mt-0.5">
+                {tx.wallet.emoji} {tx.wallet.name}
+              </p>
+            )}
+            {tx.note && (
+              <p className="text-xs text-white/25 mt-0.5 italic truncate">"{tx.note}"</p>
+            )}
           </div>
-          {/* Desktop hover delete */}
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-white/30 hover:text-red-400 mt-0.5"
-            aria-label="Delete transaction"
-          >
-            {deleting ? (
-              <span className="text-xs">…</span>
-            ) : (
+
+          <div className="flex items-start gap-2 shrink-0">
+            <div className="text-right">
+              <p className={`font-bold text-sm ${amountClass}`}>
+                {amountPrefix}₹{formattedAmount}
+              </p>
+              <p className="text-xs text-white/25 mt-0.5">{displayDate}</p>
+            </div>
+            {/* Desktop hover delete */}
+            <button
+              onClick={(e) => { e.stopPropagation(); handleDeleteClick(e); }}
+              disabled={deleting}
+              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-white/30 hover:text-red-400 mt-0.5 shrink-0"
+              aria-label="Delete"
+            >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="3 6 5 6 21 6" />
                 <path d="M19 6l-1 14H6L5 6" />
                 <path d="M10 11v6M14 11v6" />
                 <path d="M9 6V4h6v2" />
               </svg>
-            )}
-          </button>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

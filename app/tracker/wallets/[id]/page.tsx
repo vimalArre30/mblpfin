@@ -34,7 +34,7 @@ export default async function WalletDetailPage({
         *,
         wallet:wallets!transactions_wallet_id_fkey(name, emoji, color),
         categories(name),
-        transaction_labels(labels(name))
+        transaction_labels(label_id, labels(name))
       `
       )
       .eq("wallet_id", id)
