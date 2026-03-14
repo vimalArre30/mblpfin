@@ -27,6 +27,8 @@ export default async function TransactionsPage() {
       .limit(50),
   ]);
 
+  console.log("[Transactions] fetched:", transactions?.length, "wallets:", wallets?.length);
+
   return (
     <TransactionsClient
       initialTransactions={transactions ?? []}

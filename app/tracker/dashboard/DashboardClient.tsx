@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import AddEntryModal from "@/components/tracker/AddEntryModal";
 import StatCards from "@/components/tracker/StatCards";
 import SpendByCategory, {
@@ -34,11 +35,12 @@ export default function DashboardClient({
   transactions,
   wallets,
 }: Props) {
+  const router = useRouter();
   const [showModal, setShowModal] = useState(false);
 
   function handleCreated() {
     setShowModal(false);
-    window.location.reload();
+    router.refresh();
   }
 
   return (

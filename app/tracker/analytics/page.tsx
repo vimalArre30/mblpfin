@@ -5,6 +5,8 @@ import type { CategorySpend } from "@/components/tracker/SpendByCategory";
 import type { MonthlyDataPoint } from "@/components/tracker/MonthlyChart";
 import type { NeedWantData } from "@/components/tracker/NeedWantRatio";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Analytics — MrBottomLine Tracker",
 };
