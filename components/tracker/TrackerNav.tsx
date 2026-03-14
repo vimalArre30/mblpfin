@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/tracker/dashboard", label: "Dashboard" },
-  { href: "/tracker/wallets", label: "Wallets" },
   { href: "/tracker/transactions", label: "Transactions" },
+  { href: "/tracker/wallets", label: "Wallets" },
   { href: "/tracker/analytics", label: "Analytics" },
   { href: "/tracker/settings", label: "Settings" },
 ];

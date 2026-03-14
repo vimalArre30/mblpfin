@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import AddEntryModal from "@/components/tracker/AddEntryModal";
 import StatCards from "@/components/tracker/StatCards";
@@ -37,6 +37,24 @@ export default function DashboardClient({
 }: Props) {
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
+  const [selectedWalletId, setSelectedWalletId] = useState("all");
+
+  const filtered = selectedWalletId === "all"
+    ? transactions
+    : transactions.filter((t) => t.wallet_id === selectedWalletId);
+
+  const filteredStats = useMemo(() => {
+    let totalIncome = 0;
+    let totalExpense = 0;
+    for (const tx of filtered) {
+      const amount = Number(tx.amount);
+      const entryType = tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
+      if (entryType === "transfer") continue;
+      if (entryType === "income") { totalIncome += Math.abs(amount); continue; }
+      totalExpense += Math.abs(amount);
+    }
+    return { totalIncome, totalExpense, netBalance: totalIncome - totalExpense };
+  }, [filtered]);
 
   function handleCreated() {
     setShowModal(false);
@@ -46,10 +64,30 @@ export default function DashboardClient({
   return (
     <>
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 pb-24 space-y-8">
+        {wallets.length > 0 && (
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-medium text-white/40 uppercase tracking-wider shrink-0">
+              Wallet
+            </span>
+            <select
+              value={selectedWalletId}
+              onChange={(e) => setSelectedWalletId(e.target.value)}
+              className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30 transition cursor-pointer"
+            >
+              <option value="all">All Wallets</option>
+              {wallets.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.emoji} {w.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <StatCards
-          totalIncome={stats.totalIncome}
-          totalExpense={stats.totalExpense}
-          netBalance={stats.netBalance}
+          totalIncome={filteredStats.totalIncome}
+          totalExpense={filteredStats.totalExpense}
+          netBalance={filteredStats.netBalance}
           walletCount={stats.walletCount}
         />
 
@@ -75,7 +113,7 @@ export default function DashboardClient({
               <span className="text-base leading-none">+</span> Add Entry
             </button>
           </div>
-          <TransactionFeed transactions={transactions} wallets={wallets} />
+          <TransactionFeed transactions={filtered} wallets={wallets} />
         </section>
       </main>
 

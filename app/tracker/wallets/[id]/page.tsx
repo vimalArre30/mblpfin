@@ -102,26 +102,26 @@ export default async function WalletDetailPage({
         </div>
 
         {/* Wallet stats */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-            <p className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-5 min-w-0 overflow-hidden">
+            <p className="text-xs font-medium text-white/40 uppercase tracking-wider mb-1 sm:mb-2 truncate">
               Total In
             </p>
-            <p className="text-green-400 font-bold text-xl">{fmt(totalIn)}</p>
+            <p className="text-green-400 font-bold text-sm sm:text-base md:text-lg truncate">{fmt(totalIn)}</p>
             <p className="text-white/30 text-xs mt-1">All time</p>
           </div>
-          <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-            <p className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2">
+          <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-5 min-w-0 overflow-hidden">
+            <p className="text-xs font-medium text-white/40 uppercase tracking-wider mb-1 sm:mb-2 truncate">
               Total Out
             </p>
-            <p className="text-red-400 font-bold text-xl">{fmt(totalOut)}</p>
+            <p className="text-red-400 font-bold text-sm sm:text-base md:text-lg truncate">{fmt(totalOut)}</p>
             <p className="text-white/30 text-xs mt-1">All time</p>
           </div>
-          <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-            <p className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2">
+          <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-5 min-w-0 overflow-hidden">
+            <p className="text-xs font-medium text-white/40 uppercase tracking-wider mb-1 sm:mb-2 truncate">
               Net Balance
             </p>
-            <p className={`font-bold text-xl ${netBalance >= 0 ? "text-green-400" : "text-red-400"}`}>
+            <p className={`font-bold text-sm sm:text-base md:text-lg truncate ${netBalance >= 0 ? "text-green-400" : "text-red-400"}`}>
               {netBalance >= 0 ? "+" : "−"}{fmt(Math.abs(netBalance))}
             </p>
             <p className="text-white/30 text-xs mt-1">
