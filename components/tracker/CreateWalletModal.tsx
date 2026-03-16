@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import VoiceRecorder from "./VoiceRecorder";
 
 const EMOJI_OPTIONS = [
   "💰", "💳", "🏦", "💵", "🛒", "🍔", "✈️", "🏠",
@@ -42,6 +43,9 @@ export default function CreateWalletModal({
   const [openingBalanceDate, setOpeningBalanceDate] = useState(
     new Date().toISOString().split("T")[0]
   );
+  const [openingBalanceNote, setOpeningBalanceNote] = useState("");
+  const [showVoice, setShowVoice] = useState(false);
+  const [voiceParsing, setVoiceParsing] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -57,6 +61,30 @@ export default function CreateWalletModal({
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
+
+  async function handleVoiceTranscript(transcript: string) {
+    setShowVoice(false);
+    setVoiceParsing(true);
+    try {
+      const res = await fetch("/api/parse-voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript, mode: "opening_balance" }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (data.amount != null) setOpeningBalance(String(data.amount));
+        if (data.date) setOpeningBalanceDate(data.date);
+        if (data.note != null) setOpeningBalanceNote(data.note);
+      } else {
+        setError(data.message ?? data.error ?? "Voice parsing failed.");
+      }
+    } catch {
+      setError("Voice parsing failed. Please try again.");
+    } finally {
+      setVoiceParsing(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -104,6 +132,7 @@ export default function CreateWalletModal({
         type: "credit",
         is_opening_balance: true,
         date: openingBalanceDate,
+        note: openingBalanceNote.trim() || null,
         category_id: null,
         label_id: null,
       });
@@ -160,39 +189,73 @@ export default function CreateWalletModal({
           </div>
 
           {/* Opening Balance + As of Date */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-white/50 mb-1.5">
-                Opening Balance{" "}
-                <span className="text-white/25 font-normal">(optional)</span>
-              </label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/50 text-sm select-none">
-                  ₹
-                </span>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-white/50 mb-1.5">
+                  Opening Balance{" "}
+                  <span className="text-white/25 font-normal">(optional)</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/50 text-sm select-none">
+                    ₹
+                  </span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
+                    value={openingBalance}
+                    onChange={(e) => setOpeningBalance(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full bg-white/10 border border-white/15 rounded-lg pl-8 pr-9 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowVoice((v) => !v)}
+                    title="Voice input"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition text-base leading-none"
+                    aria-label="Voice input for opening balance"
+                  >
+                    🎙️
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-white/50 mb-1.5">
+                  As of Date
+                </label>
                 <input
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  step="0.01"
-                  value={openingBalance}
-                  onChange={(e) => setOpeningBalance(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full bg-white/10 border border-white/15 rounded-lg pl-8 pr-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition"
+                  type="date"
+                  value={openingBalanceDate}
+                  onChange={(e) => setOpeningBalanceDate(e.target.value)}
+                  className="w-full bg-white/10 border border-white/15 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition [color-scheme:dark]"
                 />
               </div>
             </div>
+
+            {/* Note */}
             <div>
               <label className="block text-xs font-medium text-white/50 mb-1.5">
-                As of Date
+                Note{" "}
+                <span className="text-white/25 font-normal">(optional)</span>
               </label>
               <input
-                type="date"
-                value={openingBalanceDate}
-                onChange={(e) => setOpeningBalanceDate(e.target.value)}
-                className="w-full bg-white/10 border border-white/15 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition [color-scheme:dark]"
+                type="text"
+                value={openingBalanceNote}
+                onChange={(e) => setOpeningBalanceNote(e.target.value)}
+                placeholder="e.g. savings account start"
+                className="w-full bg-white/10 border border-white/15 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition"
               />
             </div>
+
+            {/* Voice recorder */}
+            {voiceParsing && (
+              <p className="text-xs text-white/40 animate-pulse">Parsing voice…</p>
+            )}
+            {showVoice && !voiceParsing && (
+              <VoiceRecorder onUse={handleVoiceTranscript} />
+            )}
           </div>
 
           {/* Emoji grid picker */}

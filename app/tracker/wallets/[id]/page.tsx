@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import TransactionFeed, {
   type Transaction,
 } from "@/components/tracker/TransactionFeed";
+import WalletDetailFAB from "./WalletDetailFAB";
+import type { Wallet } from "@/components/tracker/CreateWalletModal";
 
 export default async function WalletDetailPage({
   params,
@@ -78,6 +80,7 @@ export default async function WalletDetailPage({
   }
 
   return (
+    <>
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-8">
         {/* Back */}
         <Link
@@ -138,5 +141,7 @@ export default async function WalletDetailPage({
           <TransactionFeed transactions={transactions} wallets={allWallets ?? []} />
         </section>
     </main>
+    <WalletDetailFAB defaultWalletId={wallet.id} wallets={(allWallets ?? []) as Wallet[]} />
+    </>
   );
 }

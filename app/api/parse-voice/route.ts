@@ -1,6 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
+const OPENING_BALANCE_SYSTEM_TEMPLATE = `You are a financial assistant. The user has spoken an opening balance entry.
+Extract the following from their transcript and return ONLY valid JSON:
+{
+  "amount": <number, no currency symbols, required>,
+  "date": "<ISO date YYYY-MM-DD or null if not mentioned>",
+  "note": "<any descriptive context beyond amount and date, or null>"
+}
+
+Field rules:
+- amount: required — convert spoken amounts ("fifty thousand" → 50000); handle "₹", "rupees", "rs"
+- date: if a specific date is mentioned (e.g. "January 1st", "as of March 5th"), convert to YYYY-MM-DD; otherwise null
+- note: any descriptive text or context beyond the amount and date (e.g. "savings account start", "initial deposit")
+
+Examples:
+- "opening balance fifty thousand as of January 1st savings account start" → { "amount": 50000, "date": "{year}-01-01", "note": "savings account start" }
+- "balance is 25000" → { "amount": 25000, "date": null, "note": null }
+- "starting balance 100000 rupees April 2025 salary rollover" → { "amount": 100000, "date": "2025-04-01", "note": "salary rollover" }
+
+Today's date: {today}
+Return ONLY valid JSON. No explanation. No markdown. No code blocks.`;
+
 const TRANSFER_SYSTEM_TEMPLATE = `You are a financial assistant. The user has just spoken a transfer instruction.
 Extract the following from their transcript and return ONLY valid JSON:
 {
@@ -78,7 +99,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { transcript?: string; categories?: string[]; wallets?: string[]; mode?: string; walletNames?: string[] };
+  let body: { transcript?: string; categories?: string[]; wallets?: string[]; mode?: string; walletNames?: string[]; today?: string };
   try {
     body = await req.json();
   } catch {
@@ -93,15 +114,20 @@ export async function POST(req: NextRequest) {
 
   const today = new Date().toISOString().split("T")[0];
 
-  const systemPrompt = mode === "transfer"
-    ? TRANSFER_SYSTEM_TEMPLATE.replace(
-        "{walletNames}",
-        walletNames.length ? walletNames.join(", ") : "None provided"
-      )
-    : SYSTEM_TEMPLATE
-        .replace("{categories}", categories.length ? categories.join(", ") : "Food, Travel, Utilities, Health, Entertainment, Shopping, Investment, Other")
-        .replace("{wallets}", wallets.length ? wallets.join(", ") : "None provided")
-        .replace("{today}", today);
+  const systemPrompt =
+    mode === "opening_balance"
+      ? OPENING_BALANCE_SYSTEM_TEMPLATE
+          .replace("{today}", today)
+          .replace("{year}", today.split("-")[0])
+      : mode === "transfer"
+      ? TRANSFER_SYSTEM_TEMPLATE.replace(
+          "{walletNames}",
+          walletNames.length ? walletNames.join(", ") : "None provided"
+        )
+      : SYSTEM_TEMPLATE
+          .replace("{categories}", categories.length ? categories.join(", ") : "Food, Travel, Utilities, Health, Entertainment, Shopping, Investment, Other")
+          .replace("{wallets}", wallets.length ? wallets.join(", ") : "None provided")
+          .replace("{today}", today);
 
   console.log("[parse-voice] transcript:", transcript);
 

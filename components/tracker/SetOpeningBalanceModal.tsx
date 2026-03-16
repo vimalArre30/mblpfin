@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Wallet } from "./CreateWalletModal";
+import VoiceRecorder from "./VoiceRecorder";
 
 export default function SetOpeningBalanceModal({
   wallet,
@@ -15,10 +16,13 @@ export default function SetOpeningBalanceModal({
 }) {
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [note, setNote] = useState("");
   const [existingTxId, setExistingTxId] = useState<string | null>(null);
   const [fetching, setFetching] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showVoice, setShowVoice] = useState(false);
+  const [voiceParsing, setVoiceParsing] = useState(false);
 
   const amountRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
@@ -35,7 +39,7 @@ export default function SetOpeningBalanceModal({
     async function fetchExisting() {
       const { data } = await supabase
         .from("transactions")
-        .select("id, amount, date")
+        .select("id, amount, date, note")
         .eq("wallet_id", wallet.id)
         .eq("is_opening_balance", true)
         .maybeSingle();
@@ -44,6 +48,7 @@ export default function SetOpeningBalanceModal({
         setExistingTxId(data.id);
         setAmount(String(Math.abs(Number(data.amount))));
         setDate(data.date);
+        setNote(data.note ?? "");
       }
       setFetching(false);
     }
@@ -52,6 +57,30 @@ export default function SetOpeningBalanceModal({
     return () => document.removeEventListener("keydown", handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function handleVoiceTranscript(transcript: string) {
+    setShowVoice(false);
+    setVoiceParsing(true);
+    try {
+      const res = await fetch("/api/parse-voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript, mode: "opening_balance" }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (data.amount != null) setAmount(String(data.amount));
+        if (data.date) setDate(data.date);
+        if (data.note != null) setNote(data.note);
+      } else {
+        setError(data.message ?? data.error ?? "Voice parsing failed.");
+      }
+    } catch {
+      setError("Voice parsing failed. Please try again.");
+    } finally {
+      setVoiceParsing(false);
+    }
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -73,11 +102,13 @@ export default function SetOpeningBalanceModal({
       return;
     }
 
+    const trimmedNote = note.trim() || null;
+
     if (existingTxId) {
       // Update existing row
       const { error: upErr } = await supabase
         .from("transactions")
-        .update({ amount: parsed, date })
+        .update({ amount: parsed, date, note: trimmedNote })
         .eq("id", existingTxId);
       if (upErr) { setError(upErr.message); setLoading(false); return; }
     } else {
@@ -91,6 +122,7 @@ export default function SetOpeningBalanceModal({
         type: "credit",
         is_opening_balance: true,
         date,
+        note: trimmedNote,
         category_id: null,
         label_id: null,
       });
@@ -172,8 +204,17 @@ export default function SetOpeningBalanceModal({
                   value={amount}
                   onChange={(e) => { setAmount(e.target.value); setError(""); }}
                   placeholder="0.00"
-                  className="w-full bg-white/10 border border-white/15 rounded-lg pl-8 pr-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition"
+                  className="w-full bg-white/10 border border-white/15 rounded-lg pl-8 pr-9 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowVoice((v) => !v)}
+                  title="Voice input"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition text-base leading-none"
+                  aria-label="Voice input for opening balance"
+                >
+                  🎙️
+                </button>
               </div>
             </div>
 
@@ -189,6 +230,29 @@ export default function SetOpeningBalanceModal({
                 className="w-full bg-white/10 border border-white/15 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition [color-scheme:dark]"
               />
             </div>
+
+            {/* Note */}
+            <div>
+              <label className="block text-xs font-medium text-white/50 mb-1.5">
+                Note{" "}
+                <span className="text-white/25 font-normal">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="e.g. savings account start"
+                className="w-full bg-white/10 border border-white/15 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition"
+              />
+            </div>
+
+            {/* Voice recorder */}
+            {voiceParsing && (
+              <p className="text-xs text-white/40 animate-pulse">Parsing voice…</p>
+            )}
+            {showVoice && !voiceParsing && (
+              <VoiceRecorder onUse={handleVoiceTranscript} />
+            )}
 
             {error && (
               <p className="text-red-400 text-xs bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">

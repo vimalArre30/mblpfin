@@ -20,12 +20,16 @@ export default async function AnalyticsPage() {
 
   if (!user) redirect("/tracker/login");
 
-  const { data: rawTx } = await supabase
-    .from("transactions")
-    .select("amount, date, type, categories(name), transaction_labels(labels(name))")
-    .order("date", { ascending: false });
+  const [{ data: rawTx }, { data: walletsData }] = await Promise.all([
+    supabase
+      .from("transactions")
+      .select("amount, date, type, categories(name), transaction_labels(labels(name))")
+      .order("date", { ascending: false }),
+    supabase.from("wallets").select("id, name, emoji, color, created_at"),
+  ]);
 
   const transactions = rawTx ?? [];
+  const wallets = walletsData ?? [];
 
   const now = new Date();
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
@@ -83,6 +87,7 @@ export default async function AnalyticsPage() {
       needWant={needWant}
       totalSpent={totalSpent}
       txCount={transactions.length}
+      wallets={wallets as any}
     />
   );
 }

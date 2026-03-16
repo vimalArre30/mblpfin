@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import SpendByCategory, {
   type CategorySpend,
 } from "@/components/tracker/SpendByCategory";
@@ -9,6 +11,8 @@ import MonthlyChart, {
 import NeedWantRatio, {
   type NeedWantData,
 } from "@/components/tracker/NeedWantRatio";
+import AddEntryModal from "@/components/tracker/AddEntryModal";
+import type { Wallet } from "@/components/tracker/CreateWalletModal";
 
 interface Props {
   chartData: CategorySpend[];
@@ -16,6 +20,7 @@ interface Props {
   needWant: NeedWantData;
   totalSpent: number;
   txCount: number;
+  wallets: Wallet[];
 }
 
 export default function AnalyticsClient({
@@ -24,8 +29,18 @@ export default function AnalyticsClient({
   needWant,
   totalSpent,
   txCount,
+  wallets,
 }: Props) {
+  const router = useRouter();
+  const [showModal, setShowModal] = useState(false);
+
+  function handleCreated() {
+    setShowModal(false);
+    router.refresh();
+  }
+
   return (
+    <>
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 pb-16 space-y-8">
         <div>
           <h1 className="font-playfair text-2xl font-bold text-white">
@@ -49,5 +64,23 @@ export default function AnalyticsClient({
           />
         </div>
     </main>
+
+    {/* FAB */}
+    <button
+      onClick={() => setShowModal(true)}
+      className="sm:hidden fixed bottom-6 right-5 z-40 flex items-center gap-2 bg-white text-navy-dark font-semibold text-sm rounded-2xl px-5 py-3 shadow-lg shadow-black/40 hover:bg-white/90 transition"
+      aria-label="Add Entry"
+    >
+      <span className="text-lg leading-none">+</span> Add Entry
+    </button>
+
+    {showModal && (
+      <AddEntryModal
+        wallets={wallets}
+        onCreated={handleCreated}
+        onClose={() => setShowModal(false)}
+      />
+    )}
+    </>
   );
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Wallet } from "./CreateWalletModal";
 import AddEntryModal, { type EditableTransaction } from "./AddEntryModal";
+import TransactionDetail from "./TransactionDetail";
 
 export interface Transaction {
   id: string;
@@ -62,6 +63,7 @@ export default function TransactionFeed({
   // Only one row swiped at a time
   const [swipedId, setSwipedId] = useState<string | null>(null);
   const [editingTx, setEditingTx] = useState<EditableTransaction | null>(null);
+  const [viewingTx, setViewingTx] = useState<Transaction | null>(null);
 
   function handleSwipe(id: string | null) {
     setSwipedId(id);
@@ -117,6 +119,7 @@ export default function TransactionFeed({
                   onSwipe={handleSwipe}
                   onEdit={(t) => { setSwipedId(null); setEditingTx(t); }}
                   onDelete={handleDelete}
+                  onTap={(t) => { setSwipedId(null); setViewingTx(t); }}
                 />
               ))}
             </div>
@@ -132,6 +135,14 @@ export default function TransactionFeed({
           onClose={() => setEditingTx(null)}
         />
       )}
+
+      {viewingTx && (
+        <TransactionDetail
+          tx={viewingTx}
+          wallets={wallets}
+          onClose={() => setViewingTx(null)}
+        />
+      )}
     </>
   );
 }
@@ -143,6 +154,7 @@ function TxRow({
   onSwipe,
   onEdit,
   onDelete,
+  onTap,
 }: {
   tx: Transaction;
   wallets: Wallet[];
@@ -150,16 +162,24 @@ function TxRow({
   onSwipe: (id: string | null) => void;
   onEdit: (tx: EditableTransaction) => void;
   onDelete: (tx: Transaction) => void;
+  onTap: (tx: Transaction) => void;
 }) {
   const [deleting, setDeleting] = useState(false);
   const rowRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
+  const touchStartTime = useRef(0);
+  // Suppress the synthetic click that fires after a handled touch-tap
+  const suppressNextClick = useRef(false);
   // Keep latest values accessible inside the stable event handler closure
   const onSwipeRef = useRef(onSwipe);
+  const onTapRef = useRef(onTap);
+  const txRef = useRef(tx);
   const txIdRef = useRef(tx.id);
   const isSwipedRef = useRef(isSwiped);
   onSwipeRef.current = onSwipe;
+  onTapRef.current = onTap;
+  txRef.current = tx;
   txIdRef.current = tx.id;
   isSwipedRef.current = isSwiped;
 
@@ -171,16 +191,36 @@ function TxRow({
     function handleTouchStart(e: TouchEvent) {
       touchStartX.current = e.touches[0].clientX;
       touchStartY.current = e.touches[0].clientY;
+      touchStartTime.current = Date.now();
     }
 
     function handleTouchEnd(e: TouchEvent) {
-      const dx = touchStartX.current - e.changedTouches[0].clientX;
-      const dy = Math.abs(touchStartY.current - e.changedTouches[0].clientY);
-      // Require a clearly horizontal gesture
-      if (dx > 50 && dx > dy * 1.5) {
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const dx = touchStartX.current - endX;          // positive = swipe left
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(touchStartY.current - endY);
+      const elapsed = Date.now() - touchStartTime.current;
+
+      // ── Tap: fast touch that barely moved ───────────────────────────────
+      if (elapsed < 150 && absDx < 10 && absDy < 10) {
+        suppressNextClick.current = true;
+        if (isSwipedRef.current) {
+          onSwipeRef.current(null);
+        } else {
+          onTapRef.current(txRef.current);
+        }
+        return;
+      }
+
+      // ── Swipe left (>60 px, clearly horizontal) ─────────────────────────
+      if (dx > 60 && dx > absDy * 1.5) {
         onSwipeRef.current(txIdRef.current);
-      } else if (dx < -20) {
-        // Right-swipe closes the panel
+        return;
+      }
+
+      // ── Swipe right — close panel ────────────────────────────────────────
+      if (dx < -20 && absDy < absDx) {
         onSwipeRef.current(null);
       }
     }
@@ -261,10 +301,18 @@ function TxRow({
       ref={rowRef}
       className="relative rounded-xl overflow-hidden"
       onClick={(e) => {
-        // Tapping the row (not an action button) closes the swipe panel
+        // Suppress the ghost click that follows a touch-handled tap
+        if (suppressNextClick.current) {
+          suppressNextClick.current = false;
+          e.stopPropagation();
+          return;
+        }
+        // Desktop click: close swipe panel if open, otherwise open detail view
         if (isSwiped) {
           e.stopPropagation();
           onSwipe(null);
+        } else {
+          onTap(tx);
         }
       }}
     >

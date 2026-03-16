@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import CreateWalletModal, {
   type Wallet,
 } from "@/components/tracker/CreateWalletModal";
 import SetOpeningBalanceModal from "@/components/tracker/SetOpeningBalanceModal";
+import AddEntryModal from "@/components/tracker/AddEntryModal";
 
 function TrashIcon({ className }: { className?: string }) {
   return (
@@ -127,8 +129,10 @@ export default function WalletsClient({
 }: {
   initialWallets: Wallet[];
 }) {
+  const router = useRouter();
   const [wallets, setWallets] = useState<Wallet[]>(initialWallets);
   const [showModal, setShowModal] = useState(false);
+  const [showAddEntry, setShowAddEntry] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingWallet, setEditingWallet] = useState<Wallet | null>(null);
 
@@ -226,6 +230,24 @@ export default function WalletsClient({
           wallet={editingWallet}
           onSaved={() => setEditingWallet(null)}
           onClose={() => setEditingWallet(null)}
+        />
+      )}
+
+      {/* FAB */}
+      <button
+        onClick={() => setShowAddEntry(true)}
+        className="sm:hidden fixed bottom-6 right-5 z-40 flex items-center gap-2 bg-white text-navy-dark font-semibold text-sm rounded-2xl px-5 py-3 shadow-lg shadow-black/40 hover:bg-white/90 transition"
+        aria-label="Add Entry"
+      >
+        <span className="text-lg leading-none">+</span> Add Entry
+      </button>
+
+      {/* Add entry modal */}
+      {showAddEntry && (
+        <AddEntryModal
+          wallets={wallets}
+          onCreated={() => { setShowAddEntry(false); router.refresh(); }}
+          onClose={() => setShowAddEntry(false)}
         />
       )}
     </>

@@ -32,11 +32,13 @@ export default function AddEntryModal({
   onCreated,
   onClose,
   editTx,
+  defaultWalletId,
 }: {
   wallets: Wallet[];
   onCreated: () => void;
   onClose: () => void;
   editTx?: EditableTransaction;
+  defaultWalletId?: string;
 }) {
   const isEditing = !!editTx;
   const isOpeningBalanceEdit = isEditing && editTx.is_opening_balance === true;
@@ -59,7 +61,7 @@ export default function AddEntryModal({
   );
   const [note, setNote] = useState(editTx?.note ?? "");
   const [walletId, setWalletId] = useState(
-    editTx?.wallet_id ?? wallets[0]?.id ?? ""
+    editTx?.wallet_id ?? defaultWalletId ?? wallets[0]?.id ?? ""
   );
   // For transfer edit: pre-fill to_wallet_id from the debit leg
   const [toWalletId, setToWalletId] = useState(
