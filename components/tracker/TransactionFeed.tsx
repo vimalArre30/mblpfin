@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Wallet } from "./CreateWalletModal";
 import AddEntryModal, { type EditableTransaction } from "./AddEntryModal";
 import TransactionDetail from "./TransactionDetail";
+import ConfirmDeleteDialog from "./ConfirmDeleteDialog";
 
 export interface Transaction {
   id: string;
@@ -64,6 +65,7 @@ export default function TransactionFeed({
   const [swipedId, setSwipedId] = useState<string | null>(null);
   const [editingTx, setEditingTx] = useState<EditableTransaction | null>(null);
   const [viewingTx, setViewingTx] = useState<Transaction | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Transaction | null>(null);
 
   function handleSwipe(id: string | null) {
     setSwipedId(id);
@@ -118,7 +120,7 @@ export default function TransactionFeed({
                   isSwiped={swipedId === tx.id}
                   onSwipe={handleSwipe}
                   onEdit={(t) => { setSwipedId(null); setEditingTx(t); }}
-                  onDelete={handleDelete}
+                  onDelete={(t) => { setPendingDelete(t); }}
                   onTap={(t) => { setSwipedId(null); setViewingTx(t); }}
                 />
               ))}
@@ -141,6 +143,14 @@ export default function TransactionFeed({
           tx={viewingTx}
           wallets={wallets}
           onClose={() => setViewingTx(null)}
+        />
+      )}
+
+      {pendingDelete && (
+        <ConfirmDeleteDialog
+          tx={pendingDelete}
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={() => { handleDelete(pendingDelete); setPendingDelete(null); }}
         />
       )}
     </>
@@ -205,11 +215,14 @@ function TxRow({
       // ── Tap: fast touch that barely moved ───────────────────────────────
       if (elapsed < 150 && absDx < 10 && absDy < 10) {
         suppressNextClick.current = true;
-        if (isSwipedRef.current) {
-          onSwipeRef.current(null);
-        } else {
+        // Safety reset so the flag never permanently blocks future taps
+        setTimeout(() => { suppressNextClick.current = false; }, 300);
+        if (!isSwipedRef.current) {
           onTapRef.current(txRef.current);
         }
+        // If the panel is open, don't close it here — let the click event bubble.
+        // Buttons inside the panel have stopPropagation and handle their own clicks;
+        // a tap on the row body is caught by the outer div's onClick below.
         return;
       }
 
@@ -305,6 +318,9 @@ function TxRow({
         if (suppressNextClick.current) {
           suppressNextClick.current = false;
           e.stopPropagation();
+          // If the panel was open and the user tapped the row body (not a button —
+          // those stop propagation before reaching here), close the panel.
+          if (isSwiped) onSwipe(null);
           return;
         }
         // Desktop click: close swipe panel if open, otherwise open detail view
