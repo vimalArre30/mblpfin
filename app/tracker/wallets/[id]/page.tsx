@@ -39,7 +39,8 @@ export default async function WalletDetailPage({
       `
       )
       .eq("wallet_id", id)
-      .order("date", { ascending: false }),
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false }),
     supabase.from("wallets").select("id, name, emoji, color, created_at"),
   ]);
 

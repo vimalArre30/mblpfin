@@ -35,7 +35,8 @@ export default async function DashboardPage() {
       transaction_labels(label_id, labels(name))
     `
     )
-    .order("date", { ascending: false });
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false });
 
   const transactions: Transaction[] = (rawTransactions ?? []) as Transaction[];
 
