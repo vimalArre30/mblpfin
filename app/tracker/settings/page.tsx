@@ -18,7 +18,7 @@ export default async function SettingsPage() {
   const [{ data: categories }, { data: labels }] = await Promise.all([
     supabase
       .from("categories")
-      .select("id, name, icon, user_id")
+      .select("id, name, icon, type, user_id")
       .order("name", { ascending: true }),
     supabase
       .from("labels")

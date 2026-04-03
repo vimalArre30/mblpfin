@@ -3,10 +3,9 @@ export const dynamic = "force-dynamic";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import TransactionFeed, {
-  type Transaction,
-} from "@/components/tracker/TransactionFeed";
+import type { Transaction } from "@/components/tracker/TransactionFeed";
 import WalletDetailFAB from "./WalletDetailFAB";
+import WalletDetailFilter from "./WalletDetailFilter";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
 
 export default async function WalletDetailPage({
@@ -56,22 +55,35 @@ export default async function WalletDetailPage({
 
   let totalIn = 0;
   let totalOut = 0;
+  let transfersIn = 0;
+  let transfersOut = 0;
   let thisMonth = 0;
 
   for (const tx of transactions) {
-    const amount = Math.abs(Number(tx.amount));
+    const raw = Number(tx.amount);
+    const abs = Math.abs(raw);
     const entryType = tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
-    if (tx.is_opening_balance) continue;
-    if (entryType === "income") {
-      totalIn += amount;
-      if (tx.date >= startOfMonth) thisMonth += amount;
+
+    if (entryType === "income" || tx.is_opening_balance) {
+      totalIn += abs;
+      if (tx.date >= startOfMonth) thisMonth += abs;
     } else if (entryType === "expense") {
-      totalOut += amount;
-      if (tx.date >= startOfMonth) thisMonth -= amount;
+      totalOut += abs;
+      if (tx.date >= startOfMonth) thisMonth -= abs;
+    } else if (entryType === "transfer") {
+      if (raw > 0) {
+        // Credit leg — money arrived into this wallet
+        transfersIn += abs;
+        if (tx.date >= startOfMonth) thisMonth += abs;
+      } else {
+        // Debit leg — money left this wallet
+        transfersOut += abs;
+        if (tx.date >= startOfMonth) thisMonth -= abs;
+      }
     }
   }
 
-  const netBalance = totalIn - totalOut;
+  const netBalance = totalIn - totalOut + transfersIn - transfersOut;
 
   const accent = wallet.color ?? "#2563EB";
 
@@ -133,13 +145,26 @@ export default async function WalletDetailPage({
           </div>
         </div>
 
-        {/* Transactions */}
-        <section>
-          <h2 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-4">
-            Transactions
-          </h2>
-          <TransactionFeed transactions={transactions} wallets={allWallets ?? []} />
-        </section>
+        {/* Transfer breakdown — only shown when this wallet has transfers */}
+        {(transfersIn > 0 || transfersOut > 0) && (
+          <div className="grid grid-cols-2 gap-2 -mt-4">
+            <div className="bg-white/[0.03] border border-white/8 rounded-xl px-4 py-3 flex items-center justify-between">
+              <p className="text-xs text-white/40">Transfers In</p>
+              <p className="text-blue-300 font-semibold text-sm">+{fmt(transfersIn)}</p>
+            </div>
+            <div className="bg-white/[0.03] border border-white/8 rounded-xl px-4 py-3 flex items-center justify-between">
+              <p className="text-xs text-white/40">Transfers Out</p>
+              <p className="text-blue-300/70 font-semibold text-sm">−{fmt(transfersOut)}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Transactions with category filter */}
+        <WalletDetailFilter
+          transactions={transactions}
+          wallets={allWallets ?? []}
+          accent={accent}
+        />
     </main>
     <WalletDetailFAB defaultWalletId={wallet.id} wallets={(allWallets ?? []) as Wallet[]} />
     </>

@@ -2,19 +2,24 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 const DEFAULT_CATEGORIES = [
-  { name: "Food", icon: "🍔" },
-  { name: "Transport", icon: "🚗" },
-  { name: "Health", icon: "🏥" },
-  { name: "Entertainment", icon: "🎬" },
-  { name: "Utilities", icon: "💡" },
-  { name: "Shopping", icon: "🛍️" },
-  { name: "Investment", icon: "📈" },
-  { name: "Other", icon: "📦" },
+  // ── Expense ──────────────────────────────────────────────────────────────
+  { name: "Food",          icon: "🍔", type: "expense" },
+  { name: "Transport",     icon: "🚗", type: "expense" },
+  { name: "Health",        icon: "🏥", type: "expense" },
+  { name: "Entertainment", icon: "🎬", type: "expense" },
+  { name: "Utilities",     icon: "💡", type: "expense" },
+  { name: "Shopping",      icon: "🛍️", type: "expense" },
+  { name: "Other",         icon: "📦", type: "expense" },
+  // ── Income ───────────────────────────────────────────────────────────────
+  { name: "Salary",             icon: "💰", type: "income" },
+  { name: "Freelance",          icon: "💻", type: "income" },
+  { name: "Investment Returns", icon: "📈", type: "income" },
+  { name: "Other Income",       icon: "💵", type: "income" },
 ];
 
 const DEFAULT_LABELS = [
-  { name: "Need", color: "#2563EB" },
-  { name: "Want", color: "#D97706" },
+  { name: "Need",       color: "#2563EB" },
+  { name: "Want",       color: "#D97706" },
   { name: "Investment", color: "#16A34A" },
 ];
 
@@ -39,7 +44,7 @@ export async function POST() {
     return NextResponse.json({ seeded: false, reason: "already seeded" });
   }
 
-  // Insert default categories
+  // Insert default categories (with type)
   const { error: catError } = await supabase.from("categories").insert(
     DEFAULT_CATEGORIES.map((c) => ({ ...c, user_id: user.id }))
   );

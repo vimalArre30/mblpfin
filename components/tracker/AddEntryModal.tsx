@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Wallet } from "./CreateWalletModal";
 import VoiceRecorder from "./VoiceRecorder";
+import CategoryPickerSheet from "./CategoryPickerSheet";
+import LabelPickerSheet from "./LabelPickerSheet";
 
-type Category = { id: string; name: string; icon: string | null };
+type Category = { id: string; name: string; icon: string | null; type?: string | null };
 type Label = { id: string; name: string; color: string | null };
 type EntryType = "income" | "expense" | "transfer";
 
@@ -88,15 +90,20 @@ export default function AddEntryModal({
   const [toWalletUnmatched, setToWalletUnmatched] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [showLabelPicker, setShowLabelPicker] = useState(false);
 
   const router = useRouter();
   const amountRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
+  // Tracks whether a picker sheet is open so the Escape handler doesn't also close this modal
+  const anyPickerOpenRef = useRef(false);
+  anyPickerOpenRef.current = showCategoryPicker || showLabelPicker;
 
   useEffect(() => {
     amountRef.current?.focus();
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && !anyPickerOpenRef.current) onClose();
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
@@ -105,7 +112,7 @@ export default function AddEntryModal({
   useEffect(() => {
     async function fetchData() {
       const [{ data: cats }, { data: lbls }] = await Promise.all([
-        supabase.from("categories").select("id, name, icon").order("name"),
+        supabase.from("categories").select("id, name, icon, type").order("name"),
         supabase.from("labels").select("id, name, color").order("name"),
       ]);
       if (cats) setCategories(cats);
@@ -319,6 +326,15 @@ export default function AddEntryModal({
   }
 
   const isTransfer = entryType === "transfer";
+
+  // Filter categories by the selected entry type.
+  // Falls back to showing all if a category's type field is null/missing.
+  const visibleCategories = categories.filter((c) => {
+    const ct = c.type ?? "both"; // safe fallback: show in all contexts
+    if (entryType === "income")  return ct === "income"  || ct === "both";
+    if (entryType === "expense") return ct === "expense" || ct === "both";
+    return true;
+  });
 
   return (
     <div
@@ -574,58 +590,64 @@ export default function AddEntryModal({
               </div>
             )}
 
-            {/* Category chips — income/expense, non-opening-balance */}
-            {!isTransfer && !isOpeningBalanceEdit && !dataLoading && categories.length > 0 && (
+            {/* Category picker trigger — income/expense, non-opening-balance */}
+            {!isTransfer && !isOpeningBalanceEdit && !dataLoading && visibleCategories.length > 0 && (
               <div>
-                <label className="block text-xs font-medium text-white/50 mb-2">Category</label>
-                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                  {categories.map((cat) => {
-                    const selected = categoryId === cat.id;
-                    return (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => setCategoryId(selected ? null : cat.id)}
-                        className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition ${
-                          selected
-                            ? "bg-white text-[#0F1E40] border-white"
-                            : "bg-transparent text-white/60 border-white/20 hover:border-white/40 hover:text-white/80"
-                        }`}
-                      >
-                        {cat.icon && <span>{cat.icon}</span>}
-                        {cat.name}
-                      </button>
-                    );
-                  })}
-                </div>
+                <label className="block text-xs font-medium text-white/50 mb-1.5">Category</label>
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryPicker(true)}
+                  className="w-full flex items-center justify-between bg-white/10 border border-white/15 rounded-lg px-4 py-2.5 text-sm transition hover:border-white/30 min-h-[44px]"
+                >
+                  <span className={categoryId ? "text-white" : "text-white/30"}>
+                    {categoryId
+                      ? (() => {
+                          const cat = visibleCategories.find((c) => c.id === categoryId);
+                          return cat ? `${cat.icon ? cat.icon + " " : ""}${cat.name}` : "Select category";
+                        })()
+                      : "Select category"}
+                  </span>
+                  <svg className="w-4 h-4 text-white/30 flex-shrink-0 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                  </svg>
+                </button>
               </div>
             )}
 
-            {/* Label chips — income/expense, non-opening-balance */}
+            {/* Label picker trigger — income/expense, non-opening-balance */}
             {!isTransfer && !isOpeningBalanceEdit && !dataLoading && labels.length > 0 && (
               <div>
-                <label className="block text-xs font-medium text-white/50 mb-2">
+                <label className="block text-xs font-medium text-white/50 mb-1.5">
                   Labels <span className="text-white/25 font-normal">(multi-select)</span>
                 </label>
-                <div className="flex gap-2 flex-wrap">
-                  {labels.map((lbl) => {
-                    const selected = selectedLabels.includes(lbl.id);
-                    const color = lbl.color ?? "#2563EB";
-                    return (
-                      <button
-                        key={lbl.id}
-                        type="button"
-                        onClick={() => toggleLabel(lbl.id)}
-                        className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition ${
-                          selected ? "text-white" : "bg-transparent text-white/60 hover:text-white/80"
-                        }`}
-                        style={selected ? { backgroundColor: color, borderColor: color } : { borderColor: `${color}55` }}
-                      >
-                        {lbl.name}
-                      </button>
-                    );
-                  })}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowLabelPicker(true)}
+                  className="w-full flex items-center justify-between bg-white/10 border border-white/15 rounded-lg px-4 py-2.5 text-sm transition hover:border-white/30 min-h-[44px]"
+                >
+                  {selectedLabels.length === 0 ? (
+                    <span className="text-white/30">Select labels</span>
+                  ) : (
+                    <span className="flex flex-wrap gap-1.5">
+                      {selectedLabels.map((id) => {
+                        const lbl = labels.find((l) => l.id === id);
+                        if (!lbl) return null;
+                        return (
+                          <span
+                            key={id}
+                            className="text-xs px-2 py-0.5 rounded-full text-white font-medium"
+                            style={{ backgroundColor: lbl.color ?? "#2563EB" }}
+                          >
+                            {lbl.name}
+                          </span>
+                        );
+                      })}
+                    </span>
+                  )}
+                  <svg className="w-4 h-4 text-white/30 flex-shrink-0 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                  </svg>
+                </button>
               </div>
             )}
 
@@ -671,6 +693,24 @@ export default function AddEntryModal({
           </div>
         </form>
       </div>
+
+      {showCategoryPicker && (
+        <CategoryPickerSheet
+          categories={visibleCategories}
+          selectedId={categoryId}
+          onSelect={setCategoryId}
+          onClose={() => setShowCategoryPicker(false)}
+        />
+      )}
+
+      {showLabelPicker && (
+        <LabelPickerSheet
+          labels={labels}
+          selectedIds={selectedLabels}
+          onChange={setSelectedLabels}
+          onClose={() => setShowLabelPicker(false)}
+        />
+      )}
     </div>
   );
 }
