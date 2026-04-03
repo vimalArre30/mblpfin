@@ -1,10 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import AddEntryModal from "@/components/tracker/AddEntryModal";
 import TransactionFeed, { type Transaction } from "@/components/tracker/TransactionFeed";
+import PeriodFilter from "@/components/tracker/PeriodFilter";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
+
+function SkeletonRow() {
+  return (
+    <div className="animate-pulse bg-white/5 border border-white/8 rounded-xl px-4 py-3 flex items-center gap-3">
+      <div className="flex-1 space-y-2">
+        <div className="h-3 bg-white/10 rounded w-2/3" />
+        <div className="h-2.5 bg-white/8 rounded w-1/3" />
+      </div>
+      <div className="h-4 bg-white/10 rounded w-16 shrink-0" />
+    </div>
+  );
+}
 
 export default function TransactionsClient({
   initialTransactions,
@@ -14,10 +28,36 @@ export default function TransactionsClient({
   wallets: Wallet[];
 }) {
   const router = useRouter();
+  const supabase = useRef(createClient()).current;
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState(false);
 
-  const transactions = initialTransactions;
+  const [periodTx, setPeriodTx] = useState<Transaction[] | null>(null);
+  const [periodLabel, setPeriodLabel] = useState("");
+  const [periodLoading, setPeriodLoading] = useState(true);
+
+  const handlePeriodChange = useCallback(
+    async (start: string, end: string, label: string) => {
+      setPeriodLabel(label);
+      setPeriodLoading(true);
+      const { data } = await supabase
+        .from("transactions")
+        .select(
+          "*, categories(name), wallet:wallets!transactions_wallet_id_fkey(name, emoji, color), transaction_labels(label_id, labels(name))"
+        )
+        .gte("date", start)
+        .lte("date", end)
+        .order("date", { ascending: false })
+        .order("created_at", { ascending: false });
+      setPeriodTx((data ?? []) as Transaction[]);
+      setPeriodLoading(false);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  // While the first fetch hasn't completed yet, fall back to the server-provided list
+  const transactions = periodTx ?? initialTransactions;
 
   function handleCreated() {
     setShowModal(false);
@@ -30,16 +70,16 @@ export default function TransactionsClient({
     <>
       <main className="max-w-3xl mx-auto px-6 py-12">
         {/* Page title + action */}
-        <div className="flex items-start justify-between mb-8 gap-4">
+        <div className="flex items-start justify-between mb-6 gap-4">
           <div>
-            <h1 className="font-playfair text-3xl font-bold text-white">
-              Transactions
-            </h1>
-            <p className="mt-1.5 text-white/45 text-sm">
-              {transactions.length === 0
-                ? "No entries yet"
-                : `${transactions.length} entr${transactions.length !== 1 ? "ies" : "y"}`}
-            </p>
+            <h1 className="font-playfair text-3xl font-bold text-white">Transactions</h1>
+            {!periodLoading && (
+              <p className="mt-1.5 text-white/45 text-sm">
+                {transactions.length === 0
+                  ? `No entries in ${periodLabel}`
+                  : `${transactions.length} entr${transactions.length !== 1 ? "ies" : "y"}`}
+              </p>
+            )}
           </div>
           <button
             onClick={() => setShowModal(true)}
@@ -49,15 +89,26 @@ export default function TransactionsClient({
           </button>
         </div>
 
-        {/* Empty state */}
-        {transactions.length === 0 ? (
+        {/* Period filter */}
+        <div className="mb-6">
+          <PeriodFilter onChange={handlePeriodChange} />
+        </div>
+
+        {/* Content */}
+        {periodLoading ? (
+          <div className="space-y-2">
+            <SkeletonRow />
+            <SkeletonRow />
+            <SkeletonRow />
+          </div>
+        ) : transactions.length === 0 ? (
           <div className="bg-white/5 border border-white/10 rounded-2xl p-16 text-center">
             <div className="text-5xl mb-5">📋</div>
             <h2 className="font-playfair text-xl font-semibold text-white mb-2">
-              No entries yet
+              No transactions in {periodLabel}
             </h2>
             <p className="text-white/40 text-sm mb-6 max-w-xs mx-auto">
-              Log your first transaction to start tracking your expenses.
+              Try a different period or log a new entry.
             </p>
             <button
               onClick={() => setShowModal(true)}
@@ -67,7 +118,12 @@ export default function TransactionsClient({
             </button>
           </div>
         ) : (
-          <TransactionFeed transactions={transactions} wallets={wallets} />
+          <>
+            <p className="text-xs font-semibold text-white/30 uppercase tracking-widest mb-4">
+              {periodLabel}
+            </p>
+            <TransactionFeed transactions={transactions} wallets={wallets} />
+          </>
         )}
       </main>
 
@@ -87,7 +143,6 @@ export default function TransactionsClient({
         </div>
       )}
 
-      {/* Modal */}
       {showModal && (
         <AddEntryModal
           wallets={wallets}

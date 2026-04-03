@@ -49,16 +49,10 @@ export default async function WalletDetailPage({
   const transactions: Transaction[] = (rawTx ?? []) as Transaction[];
 
   // Compute wallet-level stats using entry_type
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString()
-    .split("T")[0];
-
   let totalIn = 0;
   let totalOut = 0;
   let transfersIn = 0;
   let transfersOut = 0;
-  let thisMonth = 0;
 
   for (const tx of transactions) {
     const raw = Number(tx.amount);
@@ -67,19 +61,15 @@ export default async function WalletDetailPage({
 
     if (entryType === "income" || tx.is_opening_balance) {
       totalIn += abs;
-      if (tx.date >= startOfMonth) thisMonth += abs;
     } else if (entryType === "expense") {
       totalOut += abs;
-      if (tx.date >= startOfMonth) thisMonth -= abs;
     } else if (entryType === "transfer") {
       if (raw > 0) {
         // Credit leg — money arrived into this wallet
         transfersIn += abs;
-        if (tx.date >= startOfMonth) thisMonth += abs;
       } else {
         // Debit leg — money left this wallet
         transfersOut += abs;
-        if (tx.date >= startOfMonth) thisMonth -= abs;
       }
     }
   }
@@ -140,9 +130,7 @@ export default async function WalletDetailPage({
             <p className={`font-bold text-sm sm:text-base md:text-lg truncate ${netBalance >= 0 ? "text-green-400" : "text-red-400"}`}>
               {netBalance >= 0 ? "+" : "−"}{fmt(Math.abs(netBalance))}
             </p>
-            <p className="text-white/30 text-xs mt-1">
-              {now.toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
-            </p>
+            <p className="text-white/30 text-xs mt-1">All time</p>
           </div>
         </div>
 

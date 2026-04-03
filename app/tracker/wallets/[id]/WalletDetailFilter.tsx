@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { Transaction } from "@/components/tracker/TransactionFeed";
 import TransactionFeed from "@/components/tracker/TransactionFeed";
+import PeriodFilter from "@/components/tracker/PeriodFilter";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
 
 type CategoryPill = {
@@ -10,6 +11,10 @@ type CategoryPill = {
   name: string;
   total: number;
 };
+
+function fmt(n: number) {
+  return `₹${n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
 export default function WalletDetailFilter({
   transactions,
@@ -22,13 +27,53 @@ export default function WalletDetailFilter({
 }) {
   const [selected, setSelected] = useState<string | null>(null); // null = All
 
+  // Period state
+  const [periodStart, setPeriodStart] = useState<string>(() => {
+    const n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), 1).toISOString().split("T")[0];
+  });
+  const [periodEnd, setPeriodEnd] = useState<string>(() => {
+    const n = new Date();
+    return new Date(n.getFullYear(), n.getMonth() + 1, 0).toISOString().split("T")[0];
+  });
+  const [periodLabel, setPeriodLabel] = useState<string>(() =>
+    new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" })
+  );
+
+  const handlePeriodChange = useCallback((start: string, end: string, label: string) => {
+    setPeriodStart(start);
+    setPeriodEnd(end);
+    setPeriodLabel(label);
+    setSelected(null); // reset category filter on period change
+  }, []);
+
+  // Period-filtered transactions
+  const periodTx = useMemo(
+    () => transactions.filter((tx) => tx.date >= periodStart && tx.date <= periodEnd),
+    [transactions, periodStart, periodEnd]
+  );
+
+  // This-period net (income - expense, transfers included directionally)
+  const periodNet = useMemo(() => {
+    let net = 0;
+    for (const tx of periodTx) {
+      const raw = Number(tx.amount);
+      const abs = Math.abs(raw);
+      const et = tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
+      if (et === "income" || tx.is_opening_balance) net += abs;
+      else if (et === "expense") net -= abs;
+      else if (et === "transfer") net += raw; // positive = credit into wallet, negative = debit
+    }
+    return net;
+  }, [periodTx]);
+
   const { pills, totalCount } = useMemo(() => {
     const catMap = new Map<string, CategoryPill>();
     let transferTotal = 0;
     let hasTransfer = false;
     let count = 0;
 
-    for (const tx of transactions) {
+    for (const tx of periodTx) {
       if (tx.is_opening_balance) continue;
       count++;
 
@@ -62,17 +107,17 @@ export default function WalletDetailFilter({
     }
 
     return { pills, totalCount: count };
-  }, [transactions]);
+  }, [periodTx]);
 
   const filtered = useMemo(() => {
-    if (!selected) return transactions;
-    return transactions.filter((tx) => {
+    if (!selected) return periodTx;
+    return periodTx.filter((tx) => {
       const entryType =
         tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
       if (selected === "transfer") return entryType === "transfer";
       return tx.category_id === selected;
     });
-  }, [transactions, selected]);
+  }, [periodTx, selected]);
 
   function fmtAmount(n: number) {
     return `₹${n.toLocaleString("en-IN", {
@@ -88,14 +133,26 @@ export default function WalletDetailFilter({
   };
 
   return (
-    <section>
-      <h2 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-4">
+    <section className="space-y-4">
+      <PeriodFilter onChange={handlePeriodChange} />
+
+      {/* This Period net */}
+      <div className="bg-white/[0.04] border border-white/8 rounded-xl px-4 py-3 flex items-center justify-between">
+        <p className="text-xs text-white/40 uppercase tracking-wider">
+          {periodLabel} · Net
+        </p>
+        <p className={`font-bold text-base ${periodNet >= 0 ? "text-green-400" : "text-red-400"}`}>
+          {periodNet >= 0 ? "+" : "−"}{fmt(Math.abs(periodNet))}
+        </p>
+      </div>
+
+      <h2 className="text-xs font-medium text-white/40 uppercase tracking-wider">
         Transactions
       </h2>
 
       {pills.length > 0 && (
         <div
-          className="flex gap-2 overflow-x-auto pb-3 mb-4 [&::-webkit-scrollbar]:hidden"
+          className="flex gap-2 overflow-x-auto pb-3 [&::-webkit-scrollbar]:hidden"
           style={{ scrollbarWidth: "none" }}
         >
           {/* All pill */}
