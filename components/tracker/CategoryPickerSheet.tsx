@@ -110,11 +110,10 @@ export default function CategoryPickerSheet({
         className="w-full sm:max-w-sm bg-[#0F1E40] border border-white/15 rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col"
         style={{
           maxHeight: "70vh",
-          transform: `translateY(${visible ? dragOffset : "100%"}px) ${!visible ? "" : ""}`,
-          // On mount, slide from translateY(100%) to 0; after that, only dragOffset applies
-          ...(visible ? { transform: `translateY(${dragOffset}px)` } : { transform: "translateY(100%)" }),
+          ...(visible
+            ? { transform: `translateY(${dragOffset}px)` }
+            : { transform: "translateY(100%)" }),
           transition: isDragging.current ? "none" : "transform 0.28s cubic-bezier(0.32,0.72,0,1)",
-          opacity: visible ? 1 : 0,
         }}
         onClick={(e) => e.stopPropagation()}
       >
