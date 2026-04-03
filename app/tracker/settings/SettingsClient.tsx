@@ -9,7 +9,7 @@ type Category = {
   id: string;
   name: string;
   icon: string | null;
-  type: CategoryType;
+  type: CategoryType | null;
   user_id: string | null;
 };
 
