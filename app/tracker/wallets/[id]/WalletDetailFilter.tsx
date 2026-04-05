@@ -49,25 +49,36 @@ export default function WalletDetailFilter({
     setSelected(null); // reset category filter on period change
   }, []);
 
-  // Period-filtered transactions
+  // Opening balance rows — always shown regardless of period or category filter
+  const openingBalanceTx = useMemo(
+    () => transactions.filter((tx) => tx.is_opening_balance),
+    [transactions]
+  );
+
+  // Period-filtered non-opening-balance transactions
   const periodTx = useMemo(
-    () => transactions.filter((tx) => tx.date >= periodStart && tx.date <= periodEnd),
+    () => transactions.filter((tx) => !tx.is_opening_balance && tx.date >= periodStart && tx.date <= periodEnd),
     [transactions, periodStart, periodEnd]
   );
 
   // This-period net (income - expense, transfers included directionally)
+  // Include opening balance if its date falls within the period
   const periodNet = useMemo(() => {
     let net = 0;
-    for (const tx of periodTx) {
+    const allPeriod = [
+      ...periodTx,
+      ...openingBalanceTx.filter((tx) => tx.date >= periodStart && tx.date <= periodEnd),
+    ];
+    for (const tx of allPeriod) {
       const raw = Number(tx.amount);
       const abs = Math.abs(raw);
       const et = tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
       if (et === "income" || tx.is_opening_balance) net += abs;
       else if (et === "expense") net -= abs;
-      else if (et === "transfer") net += raw; // positive = credit into wallet, negative = debit
+      else if (et === "transfer") net += raw;
     }
     return net;
-  }, [periodTx]);
+  }, [periodTx, openingBalanceTx, periodStart, periodEnd]);
 
   const { pills, totalCount } = useMemo(() => {
     const catMap = new Map<string, CategoryPill>();
@@ -112,14 +123,17 @@ export default function WalletDetailFilter({
   }, [periodTx]);
 
   const filtered = useMemo(() => {
-    if (!selected) return periodTx;
-    return periodTx.filter((tx) => {
-      const entryType =
-        tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
-      if (selected === "transfer") return entryType === "transfer";
-      return tx.category_id === selected;
-    });
-  }, [periodTx, selected]);
+    const base = selected
+      ? periodTx.filter((tx) => {
+          const entryType =
+            tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
+          if (selected === "transfer") return entryType === "transfer";
+          return tx.category_id === selected;
+        })
+      : periodTx;
+    // Opening balance always appended — never filtered out by period or category
+    return [...base, ...openingBalanceTx];
+  }, [periodTx, selected, openingBalanceTx]);
 
   function fmtAmount(n: number) {
     return `₹${n.toLocaleString("en-IN", {

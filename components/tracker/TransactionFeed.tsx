@@ -68,9 +68,30 @@ export default function TransactionFeed({
   const [editingTx, setEditingTx] = useState<EditableTransaction | null>(null);
   const [viewingTx, setViewingTx] = useState<Transaction | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Transaction | null>(null);
+  const [noDebitLegToast, setNoDebitLegToast] = useState(false);
 
   function handleSwipe(id: string | null) {
     setSwipedId(id);
+  }
+
+  function handleEdit(t: EditableTransaction) {
+    setSwipedId(null);
+    // Credit leg of a transfer: derive from-wallet by finding the paired debit leg
+    const et = t.entry_type ?? (t.type === "credit" ? "income" : "expense");
+    const isTransferCredit = et === "transfer" && Number(t.amount) > 0;
+    if (isTransferCredit && t.transfer_id) {
+      const debitLeg = transactions.find(
+        (tx) => tx.transfer_id === t.transfer_id && tx.id !== t.id
+      );
+      if (debitLeg) {
+        setEditingTx(debitLeg);
+      } else {
+        setNoDebitLegToast(true);
+        setTimeout(() => setNoDebitLegToast(false), 3000);
+      }
+    } else {
+      setEditingTx(t);
+    }
   }
 
   async function handleDelete(tx: Transaction) {
@@ -131,7 +152,7 @@ export default function TransactionFeed({
                   wallets={wallets}
                   isSwiped={swipedId === tx.id}
                   onSwipe={handleSwipe}
-                  onEdit={(t) => { setSwipedId(null); setEditingTx(t); }}
+                  onEdit={handleEdit}
                   onDelete={(t) => { setPendingDelete(t); }}
                   onTap={(t) => { setSwipedId(null); setViewingTx(t); }}
                 />
@@ -164,6 +185,12 @@ export default function TransactionFeed({
           onCancel={() => setPendingDelete(null)}
           onConfirm={() => { handleDelete(pendingDelete); setPendingDelete(null); }}
         />
+      )}
+
+      {noDebitLegToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#1e3a6e] border border-white/15 text-white/80 text-sm font-medium px-5 py-2.5 rounded-full shadow-lg z-50 pointer-events-none">
+          Open the source wallet to edit this transfer
+        </div>
       )}
     </>
   );
@@ -265,10 +292,9 @@ function TxRow({
   const isDebitLeg = isTransfer && Number(tx.amount) < 0;
   const isCreditLeg = isTransfer && !isDebitLeg;
 
-  // Credit leg of a transfer can't be edited (can't derive from-wallet)
-  const canEdit = !isCreditLeg;
-  // Action panel width: 130px (edit+delete) or 65px (delete only)
-  const panelW = canEdit ? 130 : 65;
+  // All rows are editable (credit leg edit is handled in parent via debit-leg lookup)
+  const canEdit = true;
+  const panelW = 130;
 
   const labels =
     tx.transaction_labels
