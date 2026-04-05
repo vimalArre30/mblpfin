@@ -56,9 +56,11 @@ function formatGroupHeader(dateStr: string): string {
 export default function TransactionFeed({
   transactions,
   wallets = [],
+  onSnapshotDate,
 }: {
   transactions: Transaction[];
   wallets?: Wallet[];
+  onSnapshotDate?: (date: string) => void;
 }) {
   const router = useRouter();
   // Only one row swiped at a time
@@ -110,6 +112,16 @@ export default function TransactionFeed({
                 {formatGroupHeader(date)}
               </span>
               <div className="flex-1 h-px bg-white/8" />
+              {onSnapshotDate && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onSnapshotDate(date); }}
+                  className="h-8 w-8 flex items-center justify-center rounded-lg text-white/25 hover:text-white/60 hover:bg-white/8 transition shrink-0 text-base leading-none"
+                  aria-label={`Snapshot as of ${formatGroupHeader(date)}`}
+                >
+                  ≈
+                </button>
+              )}
             </div>
             <div className="space-y-2">
               {groups[date].map((tx) => (

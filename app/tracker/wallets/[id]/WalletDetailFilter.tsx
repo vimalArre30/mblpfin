@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import type { Transaction } from "@/components/tracker/TransactionFeed";
 import TransactionFeed from "@/components/tracker/TransactionFeed";
 import PeriodFilter from "@/components/tracker/PeriodFilter";
+import WalletSnapshotPanel from "@/components/tracker/WalletSnapshotPanel";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
 
 type CategoryPill = {
@@ -26,6 +27,7 @@ export default function WalletDetailFilter({
   accent: string;
 }) {
   const [selected, setSelected] = useState<string | null>(null); // null = All
+  const [snapshotDate, setSnapshotDate] = useState<string | null>(null);
 
   // Period state
   const [periodStart, setPeriodStart] = useState<string>(() => {
@@ -179,7 +181,19 @@ export default function WalletDetailFilter({
         </div>
       )}
 
-      <TransactionFeed transactions={filtered} wallets={wallets} />
+      <TransactionFeed
+        transactions={filtered}
+        wallets={wallets}
+        onSnapshotDate={setSnapshotDate}
+      />
+
+      {snapshotDate && (
+        <WalletSnapshotPanel
+          date={snapshotDate}
+          transactions={transactions}
+          onClose={() => setSnapshotDate(null)}
+        />
+      )}
     </section>
   );
 }
