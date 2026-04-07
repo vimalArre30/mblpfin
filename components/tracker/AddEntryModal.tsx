@@ -90,6 +90,7 @@ export default function AddEntryModal({
   const [toWalletUnmatched, setToWalletUnmatched] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showLabelPicker, setShowLabelPicker] = useState(false);
 
@@ -293,33 +294,30 @@ export default function AddEntryModal({
       return;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setError("Not authenticated. Please sign in again."); setLoading(false); return; }
+    const res = await fetch("/api/tracker/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        wallet_id: walletId || null,
+        category_id: categoryId || null,
+        amount: parsedAmount,
+        description: description.trim(),
+        date,
+        entry_type: entryType,
+        note: note.trim() || null,
+        label_ids: selectedLabels,
+      }),
+    });
 
-    const noteValue = note.trim();
-    const payload: Record<string, unknown> = {
-      user_id: user.id,
-      wallet_id: walletId || null,
-      category_id: categoryId || null,
-      amount: parsedAmount,
-      description: description.trim(),
-      date,
-      entry_type: entryType,
-      type: entryType === "income" ? "credit" : "debit",
-      is_opening_balance: false,
-    };
-    if (noteValue) payload.note = noteValue;
-
-    const { data: tx, error: txError } = await supabase
-      .from("transactions").insert(payload).select().single();
-
-    if (txError) { setError(txError.message); setLoading(false); return; }
-
-    if (selectedLabels.length > 0 && tx) {
-      await supabase.from("transaction_labels").insert(
-        selectedLabels.map((lid) => ({ transaction_id: tx.id, label_id: lid }))
-      );
+    if (res.status === 402) {
+      console.log("upgrade modal triggered");
+      setShowUpgradeModal(true);
+      setLoading(false);
+      return;
     }
+
+    const data = await res.json();
+    if (!res.ok) { setError(data.error ?? "Failed to save — please try again."); setLoading(false); return; }
 
     router.refresh();
     onCreated();
