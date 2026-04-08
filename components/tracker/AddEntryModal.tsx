@@ -7,6 +7,7 @@ import type { Wallet } from "./CreateWalletModal";
 import VoiceRecorder from "./VoiceRecorder";
 import CategoryPickerSheet from "./CategoryPickerSheet";
 import LabelPickerSheet from "./LabelPickerSheet";
+import UpgradeModal from "./UpgradeModal";
 
 type Category = { id: string; name: string; icon: string | null; type?: string | null };
 type Label = { id: string; name: string; color: string | null };
@@ -709,6 +710,8 @@ export default function AddEntryModal({
           onClose={() => setShowLabelPicker(false)}
         />
       )}
+
+      <UpgradeModal open={showUpgradeModal} />
     </div>
   );
 }
