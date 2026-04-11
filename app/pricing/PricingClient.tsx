@@ -1,10 +1,29 @@
 "use client";
 
+import { useState } from "react";
+
+type Plan = "monthly" | "annual";
+
 function CheckIcon() {
   return <span className="text-amber-400 font-bold">✓</span>;
 }
 function CrossIcon() {
   return <span className="text-white/25">✕</span>;
+}
+
+function loadRazorpayScript(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (document.getElementById("razorpay-script")) {
+      resolve();
+      return;
+    }
+    const script = document.createElement("script");
+    script.id = "razorpay-script";
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Razorpay checkout"));
+    document.body.appendChild(script);
+  });
 }
 
 function PricingCard({
@@ -13,12 +32,16 @@ function PricingCard({
   sub,
   cta,
   highlight,
+  loading,
+  onCheckout,
 }: {
   label: string;
   price: string;
   sub: string;
   cta: string;
   highlight?: boolean;
+  loading: boolean;
+  onCheckout: () => void;
 }) {
   return (
     <div
@@ -37,14 +60,15 @@ function PricingCard({
       <p className="text-4xl font-bold text-white leading-none">{price}</p>
       <p className="text-sm text-white/40 mt-1 mb-6">{sub}</p>
       <button
-        onClick={() => alert("Payment coming soon — Razorpay integration in progress.")}
-        className={`w-full rounded-xl py-3 text-sm font-semibold transition mt-auto ${
+        onClick={onCheckout}
+        disabled={loading}
+        className={`w-full rounded-xl py-3 text-sm font-semibold transition mt-auto disabled:opacity-60 disabled:cursor-not-allowed ${
           highlight
             ? "bg-amber-500 hover:bg-amber-400 text-black"
             : "bg-white/10 hover:bg-white/15 text-white border border-white/15"
         }`}
       >
-        {cta}
+        {loading ? "Processing…" : cta}
       </button>
     </div>
   );
@@ -81,23 +105,80 @@ const FAQS = [
 ];
 
 export default function PricingClient() {
+  const [loadingPlan, setLoadingPlan] = useState<Plan | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleCheckout(plan: Plan) {
+    setLoadingPlan(plan);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/razorpay/create-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error ?? "Failed to start checkout — please try again.");
+        setLoadingPlan(null);
+        return;
+      }
+
+      await loadRazorpayScript();
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rzp = new (window as any).Razorpay({
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        subscription_id: data.subscriptionId,
+        name: "MrBottomLine",
+        description:
+          plan === "monthly" ? "Pro Monthly — ₹199/month" : "Pro Annual — ₹899/year",
+        theme: { color: "#F59E0B" },
+        handler: () => {
+          window.location.href = "/tracker?upgraded=true";
+        },
+      });
+
+      rzp.open();
+    } catch {
+      setError("Something went wrong — please try again.");
+    } finally {
+      setLoadingPlan(null);
+    }
+  }
+
   return (
     <div className="space-y-16">
       {/* Pricing cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-xl mx-auto">
-        <PricingCard
-          label="Monthly"
-          price="₹199"
-          sub="/month"
-          cta="Get Started — ₹199/month"
-        />
-        <PricingCard
-          label="Annual"
-          price="₹899"
-          sub="₹75/month · billed yearly"
-          cta="Get Started — ₹899/year"
-          highlight
-        />
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-xl mx-auto">
+          <PricingCard
+            label="Monthly"
+            price="₹199"
+            sub="/month"
+            cta="Get Started — ₹199/month"
+            loading={loadingPlan === "monthly"}
+            onCheckout={() => handleCheckout("monthly")}
+          />
+          <PricingCard
+            label="Annual"
+            price="₹899"
+            sub="₹75/month · billed yearly"
+            cta="Get Started — ₹899/year"
+            highlight
+            loading={loadingPlan === "annual"}
+            onCheckout={() => handleCheckout("annual")}
+          />
+        </div>
+
+        {error && (
+          <p className="text-center text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-3 max-w-xl mx-auto">
+            {error}
+          </p>
+        )}
       </div>
 
       {/* Feature comparison table */}
@@ -148,12 +229,11 @@ export default function PricingClient() {
       <div className="text-center space-y-3 pb-4">
         <p className="text-white/40 text-sm">Ready to go unlimited?</p>
         <button
-          onClick={() =>
-            alert("Payment coming soon — Razorpay integration in progress.")
-          }
-          className="bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm rounded-xl px-8 py-3 transition"
+          onClick={() => handleCheckout("annual")}
+          disabled={loadingPlan !== null}
+          className="bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm rounded-xl px-8 py-3 transition disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          Upgrade Now →
+          {loadingPlan === "annual" ? "Processing…" : "Upgrade Now →"}
         </button>
       </div>
     </div>
