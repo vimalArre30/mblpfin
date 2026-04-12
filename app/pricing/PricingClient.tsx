@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 type Plan = "monthly" | "annual";
@@ -121,6 +122,12 @@ export default function PricingClient() {
 
       const data = await res.json();
 
+      if (res.status === 409) {
+        setError("already_subscribed");
+        setLoadingPlan(null);
+        return;
+      }
+
       if (!res.ok) {
         setError(data.error ?? "Failed to start checkout — please try again.");
         setLoadingPlan(null);
@@ -175,9 +182,18 @@ export default function PricingClient() {
         </div>
 
         {error && (
-          <p className="text-center text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-3 max-w-xl mx-auto">
-            {error}
-          </p>
+          error === "already_subscribed" ? (
+            <p className="text-center text-sm text-amber-300 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3 max-w-xl mx-auto">
+              You&apos;re already on Pro!{" "}
+              <Link href="/tracker" className="underline underline-offset-2 hover:text-amber-200 transition">
+                Head to the tracker to continue.
+              </Link>
+            </p>
+          ) : (
+            <p className="text-center text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-3 max-w-xl mx-auto">
+              {error}
+            </p>
+          )
         )}
       </div>
 
@@ -225,17 +241,6 @@ export default function PricingClient() {
         </div>
       </div>
 
-      {/* Bottom CTA */}
-      <div className="text-center space-y-3 pb-4">
-        <p className="text-white/40 text-sm">Ready to go unlimited?</p>
-        <button
-          onClick={() => handleCheckout("annual")}
-          disabled={loadingPlan !== null}
-          className="bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm rounded-xl px-8 py-3 transition disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          {loadingPlan === "annual" ? "Processing…" : "Upgrade Now →"}
-        </button>
-      </div>
     </div>
   );
 }

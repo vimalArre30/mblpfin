@@ -42,6 +42,10 @@ export default function DashboardClient({
     if (params.get("upgraded") === "true") {
       setShowUpgradedBanner(true);
       router.replace("/tracker/dashboard", { scroll: false });
+      // Delay refresh so the webhook has time to update user_profiles before
+      // server components re-fetch — this hides the Upgrade pill in the nav.
+      const t = setTimeout(() => router.refresh(), 3000);
+      return () => clearTimeout(t);
     }
   }, [router]);
   const [selectedWalletId, setSelectedWalletId] = useState("all");
