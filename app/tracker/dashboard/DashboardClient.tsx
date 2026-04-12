@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AddEntryModal from "@/components/tracker/AddEntryModal";
 import StatCards from "@/components/tracker/StatCards";
@@ -33,6 +33,17 @@ export default function DashboardClient({
 }: Props) {
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
+  const [showUpgradedBanner, setShowUpgradedBanner] = useState(false);
+
+  // Show success banner when redirected back from Razorpay with ?upgraded=true,
+  // then immediately clear the param so it does not persist on refresh.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("upgraded") === "true") {
+      setShowUpgradedBanner(true);
+      router.replace("/tracker/dashboard", { scroll: false });
+    }
+  }, [router]);
   const [selectedWalletId, setSelectedWalletId] = useState("all");
 
   // Period state — initialised to the current month so the first render is stable
@@ -118,6 +129,23 @@ export default function DashboardClient({
   return (
     <>
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 pb-24 space-y-8">
+        {/* Pro upgrade success banner */}
+        {showUpgradedBanner && (
+          <div className="bg-amber-500/15 border border-amber-500/30 rounded-xl px-4 py-3 flex items-center justify-between">
+            <p className="text-sm text-amber-300 font-medium">
+              🎉 You&apos;re now on Pro! Unlimited entries unlocked.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowUpgradedBanner(false)}
+              className="text-amber-400/60 hover:text-amber-400 transition ml-4 shrink-0"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Wallet filter */}
         {wallets.length > 0 && (
           <div className="flex items-center gap-3">

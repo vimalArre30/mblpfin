@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
       plan_id: planId,
       total_count: 120,
       quantity: 1,
+      notes: { user_id: user.id },
     });
 
     return NextResponse.json({ subscriptionId: subscription.id });
