@@ -38,6 +38,9 @@ export default function AnalyticsClient({ wallets }: { wallets: Wallet[] }) {
   const [loading, setLoading] = useState(true);
   const [periodLabel, setPeriodLabel] = useState("");
   const [txs, setTxs] = useState<RawTx[]>([]);
+  const [insight, setInsight] = useState<string | null>(null);
+  const [insightLoading, setInsightLoading] = useState(false);
+  const insightFetchedForPeriod = useRef<string | null>(null);
 
   const handlePeriodChange = useCallback(
     async (start: string, end: string, label: string) => {
@@ -53,6 +56,61 @@ export default function AnalyticsClient({ wallets }: { wallets: Wallet[] }) {
         .order("date", { ascending: false });
       setTxs((data ?? []) as unknown as RawTx[]);
       setLoading(false);
+
+      if (insightFetchedForPeriod.current !== label) {
+        insightFetchedForPeriod.current = label;
+        setInsight(null);
+        setInsightLoading(true);
+
+        try {
+          const session = await supabase.auth.getSession();
+          const token = session.data.session?.access_token;
+          if (!token) return;
+
+          let totalExp = 0;
+          const catTotals: Record<string, number> = {};
+          for (const tx of (data ?? []) as unknown as RawTx[]) {
+            const entryType =
+              tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
+            if (entryType !== "expense") continue;
+            const amt = Math.abs(Number(tx.amount));
+            totalExp += amt;
+            const catName = tx.categories?.name ?? "Uncategorised";
+            catTotals[catName] = (catTotals[catName] ?? 0) + amt;
+          }
+
+          const summary = {
+            period: label,
+            totalExpense: totalExp,
+            topCategories: Object.entries(catTotals)
+              .sort(([, a], [, b]) => b - a)
+              .slice(0, 5)
+              .map(([name, total]) => ({ name, total })),
+          };
+
+          const res = await fetch("/api/tracker/insights", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              type: "wallet",
+              walletName: "All Wallets",
+              data: summary,
+            }),
+          });
+
+          if (res.ok) {
+            const json = await res.json();
+            setInsight(json.insight ?? null);
+          }
+        } catch {
+          // silent fail — insight is non-critical
+        } finally {
+          setInsightLoading(false);
+        }
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
@@ -147,6 +205,16 @@ export default function AnalyticsClient({ wallets }: { wallets: Wallet[] }) {
           </div>
         ) : (
           <>
+            {/* AI Insight Card */}
+            {insightLoading && (
+              <div className="animate-pulse bg-white/5 border border-white/10 rounded-2xl p-4 h-16" />
+            )}
+            {!insightLoading && insight && (
+              <div className="bg-[#3B5998]/20 border border-[#3B5998]/40 rounded-2xl px-5 py-4 flex gap-3 items-start">
+                <span className="text-lg leading-none mt-0.5">✨</span>
+                <p className="text-white/80 text-sm leading-relaxed">{insight}</p>
+              </div>
+            )}
             <MonthlyChart data={analytics.monthlyData} />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <SpendByCategory data={analytics.chartData} />

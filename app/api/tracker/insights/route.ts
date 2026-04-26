@@ -38,12 +38,17 @@ Mention the 6-month trend (increasing/decreasing/stable), total spend, and need/
 Be specific with rupee amounts. Do not use markdown formatting.`;
   }
 
-  const message = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 150,
-    messages: [{ role: 'user', content: prompt }],
-  });
+  try {
+    const message = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 150,
+      messages: [{ role: 'user', content: prompt }],
+    });
 
-  const insight = (message.content[0] as { type: string; text: string }).text;
-  return NextResponse.json({ insight });
+    const insight = (message.content[0] as { type: string; text: string }).text;
+    return NextResponse.json({ insight });
+  } catch (err) {
+    console.error('[insights] Anthropic error:', err);
+    return NextResponse.json({ error: 'Insight unavailable' }, { status: 500 });
+  }
 }
