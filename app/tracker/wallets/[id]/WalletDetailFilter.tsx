@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import type { Transaction } from "@/components/tracker/TransactionFeed";
 import TransactionFeed from "@/components/tracker/TransactionFeed";
 import PeriodFilter from "@/components/tracker/PeriodFilter";
@@ -21,13 +22,21 @@ export default function WalletDetailFilter({
   transactions,
   wallets,
   accent,
+  walletName,
 }: {
   transactions: Transaction[];
   wallets: Wallet[];
   accent: string;
+  walletName: string;
 }) {
+  const supabase = useRef(createClient()).current;
   const [selected, setSelected] = useState<string | null>(null); // null = All
   const [snapshotDate, setSnapshotDate] = useState<string | null>(null);
+
+  // AI insight state — wallet-scoped, refreshed on every period change
+  const [insight, setInsight] = useState<string | null>(null);
+  const [insightLoading, setInsightLoading] = useState(false);
+  const insightFetchedForPeriod = useRef<string | null>(null);
 
   // Period state
   const [periodStart, setPeriodStart] = useState<string>(() => {
@@ -42,12 +51,93 @@ export default function WalletDetailFilter({
     new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" })
   );
 
-  const handlePeriodChange = useCallback((start: string, end: string, label: string) => {
-    setPeriodStart(start);
-    setPeriodEnd(end);
-    setPeriodLabel(label);
-    setSelected(null); // reset category filter on period change
-  }, []);
+  const handlePeriodChange = useCallback(
+    async (start: string, end: string, label: string) => {
+      setPeriodStart(start);
+      setPeriodEnd(end);
+      setPeriodLabel(label);
+      setSelected(null); // reset category filter on period change
+
+      // Fire AI insight fetch (wallet-scoped) — only once per period label
+      if (insightFetchedForPeriod.current === label) return;
+      insightFetchedForPeriod.current = label;
+      setInsight(null);
+      setInsightLoading(true);
+
+      try {
+        const session = await supabase.auth.getSession();
+        const token = session.data.session?.access_token;
+        if (!token) return;
+
+        // Compute wallet-scoped period summary from already-loaded transactions
+        let totalExp = 0;
+        let totalIncome = 0;
+        let needTotal = 0;
+        let wantTotal = 0;
+        const catTotals: Record<string, number> = {};
+
+        for (const tx of transactions) {
+          if (tx.is_opening_balance) continue;
+          if (tx.date < start || tx.date > end) continue;
+          const entryType =
+            tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
+          const amt = Math.abs(Number(tx.amount));
+
+          if (entryType === "income") {
+            totalIncome += amt;
+            continue;
+          }
+          if (entryType !== "expense") continue;
+
+          totalExp += amt;
+          const catName = tx.categories?.name ?? "Uncategorised";
+          catTotals[catName] = (catTotals[catName] ?? 0) + amt;
+
+          const labelNames = (tx.transaction_labels ?? [])
+            .map((tl) => tl.labels?.name)
+            .filter((n): n is string => Boolean(n));
+          if (labelNames.includes("Need")) needTotal += amt;
+          if (labelNames.includes("Want")) wantTotal += amt;
+        }
+
+        const summary = {
+          period: label,
+          totalIncome,
+          totalExpense: totalExp,
+          needTotal,
+          wantTotal,
+          topCategories: Object.entries(catTotals)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 5)
+            .map(([name, total]) => ({ name, total })),
+        };
+
+        const res = await fetch("/api/tracker/insights", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            type: "wallet",
+            walletName,
+            data: summary,
+          }),
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          setInsight(json.insight ?? null);
+        }
+      } catch {
+        // silent fail — insight is non-critical
+      } finally {
+        setInsightLoading(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [walletName]
+  );
 
   // Opening balance rows — always shown regardless of period or category filter
   const openingBalanceTx = useMemo(
@@ -161,6 +251,17 @@ export default function WalletDetailFilter({
           {periodNet >= 0 ? "+" : "−"}{fmt(Math.abs(periodNet))}
         </p>
       </div>
+
+      {/* AI Insight Card — wallet-scoped, refreshes on period change */}
+      {insightLoading && (
+        <div className="animate-pulse bg-white/5 border border-white/10 rounded-2xl p-4 h-16" />
+      )}
+      {!insightLoading && insight && (
+        <div className="bg-[#3B5998]/20 border border-[#3B5998]/40 rounded-2xl px-5 py-4 flex gap-3 items-start">
+          <span className="text-lg leading-none mt-0.5">✨</span>
+          <p className="text-white/80 text-sm leading-relaxed">{insight}</p>
+        </div>
+      )}
 
       <h2 className="text-xs font-medium text-white/40 uppercase tracking-wider">
         Transactions

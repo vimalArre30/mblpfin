@@ -153,6 +153,7 @@ export default async function WalletDetailPage({
           transactions={transactions}
           wallets={allWallets ?? []}
           accent={accent}
+          walletName={wallet.name}
         />
     </main>
     <WalletDetailFAB defaultWalletId={wallet.id} wallets={(allWallets ?? []) as Wallet[]} />
