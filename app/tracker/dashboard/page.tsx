@@ -5,6 +5,7 @@ import type { CategorySpend } from "@/components/tracker/SpendByCategory";
 import type { MonthlyDataPoint } from "@/components/tracker/MonthlyChart";
 import type { NeedWantData } from "@/components/tracker/NeedWantRatio";
 import type { Transaction } from "@/components/tracker/TransactionFeed";
+import { getUserPlan, isProActive } from "@/lib/tracker/plan";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,17 @@ export default async function DashboardPage() {
   if (!user) redirect("/tracker/login");
 
   console.log("[Dashboard] user.id:", user.id);
+
+  // Fetch profile for paywall pill + banners
+  const profile = await getUserPlan(supabase, user.id);
+  const proActive = profile ? isProActive(profile) : false;
+  const isHalted = profile?.subscription_status === "halted";
+  // "Welcome back" expired banner: previously had Pro (plan_expires_at set) but it lapsed
+  const showExpiredBanner =
+    !!profile?.plan_expires_at &&
+    new Date(profile.plan_expires_at) <= new Date() &&
+    !proActive &&
+    !isHalted;
 
   // Fetch transactions with joined data (including destination wallet for transfers)
   const { data: rawTransactions } = await supabase
@@ -123,6 +135,13 @@ export default async function DashboardPage() {
       needWant={needWant}
       transactions={transactions}
       wallets={wallets ?? []}
+      paywall={{
+        entryCount: profile?.entry_count ?? 0,
+        proActive,
+        isHalted,
+        showExpiredBanner,
+        planExpiresAt: profile?.plan_expires_at ?? null,
+      }}
     />
   );
 }

@@ -13,6 +13,16 @@ const nextConfig: NextConfig = {
       dynamic: 0, // never serve stale RSC payload for dynamic routes
     },
   },
+  async redirects() {
+    return [
+      // /pricing is the legacy entry point — /pro is canonical
+      {
+        source: "/pricing",
+        destination: "/pro",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

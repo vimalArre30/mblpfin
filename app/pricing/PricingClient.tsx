@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { startSubscriptionCheckout } from "@/lib/razorpay-checkout";
+
 function CheckIcon() {
   return <span className="text-amber-400 font-bold">✓</span>;
 }
@@ -13,12 +16,16 @@ function PricingCard({
   sub,
   cta,
   highlight,
+  loading,
+  onSubscribe,
 }: {
   label: string;
   price: string;
   sub: string;
   cta: string;
   highlight?: boolean;
+  loading: boolean;
+  onSubscribe: () => void;
 }) {
   return (
     <div
@@ -37,14 +44,15 @@ function PricingCard({
       <p className="text-4xl font-bold text-white leading-none">{price}</p>
       <p className="text-sm text-white/40 mt-1 mb-6">{sub}</p>
       <button
-        onClick={() => alert("Payment coming soon — Razorpay integration in progress.")}
-        className={`w-full rounded-xl py-3 text-sm font-semibold transition mt-auto ${
+        onClick={onSubscribe}
+        disabled={loading}
+        className={`w-full rounded-xl py-3 text-sm font-semibold transition mt-auto disabled:opacity-50 disabled:cursor-not-allowed ${
           highlight
             ? "bg-amber-500 hover:bg-amber-400 text-black"
             : "bg-white/10 hover:bg-white/15 text-white border border-white/15"
         }`}
       >
-        {cta}
+        {loading ? "Loading…" : cta}
       </button>
     </div>
   );
@@ -68,7 +76,7 @@ const FAQS = [
   },
   {
     q: "Can I cancel anytime?",
-    a: "Yes. You can cancel your subscription at any time from your account settings. You'll retain Pro access until the end of your billing period.",
+    a: "Yes. You can cancel your subscription at any time from your Pro page. You'll retain Pro access until the end of your billing period.",
   },
   {
     q: "What payment methods are supported?",
@@ -80,7 +88,27 @@ const FAQS = [
   },
 ];
 
-export default function PricingClient() {
+export default function PricingClient({
+  prefill,
+}: {
+  prefill?: { name?: string; email?: string };
+}) {
+  const [loading, setLoading] = useState<"monthly" | "annual" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function subscribe(interval: "monthly" | "annual") {
+    setError(null);
+    setLoading(interval);
+    try {
+      await startSubscriptionCheckout({ interval, prefill });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Something went wrong";
+      setError(msg);
+    } finally {
+      setLoading(null);
+    }
+  }
+
   return (
     <div className="space-y-16">
       {/* Pricing cards */}
@@ -90,15 +118,25 @@ export default function PricingClient() {
           price="₹199"
           sub="/month"
           cta="Get Started — ₹199/month"
+          loading={loading === "monthly"}
+          onSubscribe={() => subscribe("monthly")}
         />
         <PricingCard
           label="Annual"
           price="₹899"
           sub="₹75/month · billed yearly"
           cta="Get Started — ₹899/year"
+          loading={loading === "annual"}
+          onSubscribe={() => subscribe("annual")}
           highlight
         />
       </div>
+
+      {error && (
+        <div className="max-w-xl mx-auto -mt-10 px-5 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm text-center">
+          {error}
+        </div>
+      )}
 
       {/* Feature comparison table */}
       <div>
@@ -148,12 +186,11 @@ export default function PricingClient() {
       <div className="text-center space-y-3 pb-4">
         <p className="text-white/40 text-sm">Ready to go unlimited?</p>
         <button
-          onClick={() =>
-            alert("Payment coming soon — Razorpay integration in progress.")
-          }
-          className="bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm rounded-xl px-8 py-3 transition"
+          onClick={() => subscribe("annual")}
+          disabled={loading !== null}
+          className="bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm rounded-xl px-8 py-3 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Upgrade Now →
+          {loading ? "Loading…" : "Upgrade Now →"}
         </button>
       </div>
     </div>

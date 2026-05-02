@@ -27,6 +27,7 @@ export type EditableTransaction = {
   to_wallet_id: string | null;
   category_id: string | null;
   type: string;
+  spending_type: string | null;
   transaction_labels: { label_id: string }[] | null;
 };
 
@@ -75,6 +76,11 @@ export default function AddEntryModal({
   );
   const [selectedLabels, setSelectedLabels] = useState<string[]>(
     editTx?.transaction_labels?.map((tl) => tl.label_id) ?? []
+  );
+  const [spendingType, setSpendingType] = useState<'need' | 'want' | null>(
+    (editTx?.spending_type === 'need' || editTx?.spending_type === 'want')
+      ? editTx.spending_type
+      : null
   );
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -254,6 +260,7 @@ export default function AddEntryModal({
           wallet_id: walletId || null,
           category_id: categoryId || null,
           note: noteValue,
+          spending_type: entryType === 'expense' ? spendingType : null,
         }).eq("id", editTx.id);
 
         // Re-assign labels: clear old + insert new
@@ -307,6 +314,7 @@ export default function AddEntryModal({
         entry_type: entryType,
         note: note.trim() || null,
         label_ids: selectedLabels,
+        spending_type: entryType === 'expense' ? spendingType : null,
       }),
     });
 
@@ -334,6 +342,10 @@ export default function AddEntryModal({
     if (entryType === "expense") return ct === "expense" || ct === "both";
     return true;
   });
+
+  const visibleLabels = labels.filter(
+    (l) => !['need', 'needs', 'want', 'wants'].includes(l.name.toLowerCase())
+  );
 
   return (
     <div
@@ -613,8 +625,38 @@ export default function AddEntryModal({
               </div>
             )}
 
+            {/* Spending Type — expense only */}
+            {!isTransfer && !isOpeningBalanceEdit && entryType === 'expense' && (
+              <div>
+                <label className="block text-xs font-medium text-white/50 mb-1.5">
+                  Spending Type <span className="text-white/25 font-normal">(optional)</span>
+                </label>
+                <div className="flex gap-2">
+                  {(['need', 'want'] as const).map((type) => {
+                    const selected = spendingType === type;
+                    const color = type === 'need' ? '#3B5998' : '#8B5CF6';
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setSpendingType(selected ? null : type)}
+                        className="flex-1 py-2 text-xs font-semibold rounded-lg border transition"
+                        style={{
+                          backgroundColor: selected ? `${color}33` : 'transparent',
+                          borderColor: selected ? color : 'rgba(255,255,255,0.15)',
+                          color: selected ? color : 'rgba(255,255,255,0.4)',
+                        }}
+                      >
+                        {type === 'need' ? 'Need' : 'Want'}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Label picker trigger — income/expense, non-opening-balance */}
-            {!isTransfer && !isOpeningBalanceEdit && !dataLoading && labels.length > 0 && (
+            {!isTransfer && !isOpeningBalanceEdit && !dataLoading && visibleLabels.length > 0 && (
               <div>
                 <label className="block text-xs font-medium text-white/50 mb-1.5">
                   Labels <span className="text-white/25 font-normal">(multi-select)</span>
@@ -629,7 +671,7 @@ export default function AddEntryModal({
                   ) : (
                     <span className="flex flex-wrap gap-1.5">
                       {selectedLabels.map((id) => {
-                        const lbl = labels.find((l) => l.id === id);
+                        const lbl = visibleLabels.find((l) => l.id === id);
                         if (!lbl) return null;
                         return (
                           <span
@@ -704,7 +746,7 @@ export default function AddEntryModal({
 
       {showLabelPicker && (
         <LabelPickerSheet
-          labels={labels}
+          labels={visibleLabels}
           selectedIds={selectedLabels}
           onChange={setSelectedLabels}
           onClose={() => setShowLabelPicker(false)}

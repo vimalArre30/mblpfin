@@ -18,6 +18,7 @@ export interface Transaction {
   note: string | null;
   type: string;
   entry_type: string | null;
+  spending_type: string | null;
   is_opening_balance: boolean | null;
   transfer_id: string | null;
   to_wallet_id: string | null;

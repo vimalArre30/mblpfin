@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { FREE_ENTRY_LIMIT, getUserPlan, isAtFreeLimit } from "@/lib/tracker/plan";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -10,6 +11,15 @@ export async function POST(req: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Plan / limit check — free users at limit cannot log transfers either
+  const profile = await getUserPlan(supabase, user.id);
+  if (profile && isAtFreeLimit(profile)) {
+    return NextResponse.json(
+      { error: "limit_reached", entry_count: profile.entry_count, limit: FREE_ENTRY_LIMIT },
+      { status: 402 }
+    );
   }
 
   let body: {

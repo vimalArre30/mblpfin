@@ -2,10 +2,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const FREE_ENTRY_LIMIT = 250;
 
+export type SubscriptionStatus = "none" | "active" | "cancelling" | "halted" | "expired";
+
 export type UserProfile = {
   plan: string;
   plan_expires_at: string | null;
   entry_count: number;
+  subscription_id?: string | null;
+  cancel_requested_at?: string | null;
+  discount_applied?: boolean | null;
+  subscription_status?: SubscriptionStatus | null;
 };
 
 export async function getUserPlan(
@@ -14,7 +20,9 @@ export async function getUserPlan(
 ): Promise<UserProfile | null> {
   const { data } = await supabase
     .from("user_profiles")
-    .select("plan, plan_expires_at, entry_count")
+    .select(
+      "plan, plan_expires_at, entry_count, subscription_id, cancel_requested_at, discount_applied, subscription_status"
+    )
     .eq("user_id", userId)
     .single();
   return (data as UserProfile) ?? null;
@@ -42,4 +50,18 @@ export async function incrementEntryCount(
       updated_at: new Date().toISOString(),
     })
     .eq("user_id", userId);
+}
+
+/**
+ * Derived UI state for the Pro page / Profile screen.
+ * Computed on the server from a UserProfile row.
+ */
+export function deriveProState(
+  profile: UserProfile | null
+): "free" | "pro" | "cancelling" | "halted" {
+  if (!profile) return "free";
+  if (profile.subscription_status === "halted") return "halted";
+  if (!isProActive(profile)) return "free";
+  if (profile.cancel_requested_at) return "cancelling";
+  return "pro";
 }
