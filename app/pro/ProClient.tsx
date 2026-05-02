@@ -74,8 +74,23 @@ export default function ProClient({
   userName?: string;
   justSubscribed: boolean;
 }) {
+  // Only show the welcome banner if the user JUST subscribed AND is currently on Pro.
+  // (Without this guard, a user who cancels right after subscribing would still see the
+  // celebratory banner on the cancelled-state page because ?welcome=1 sticks in the URL.)
+  const showWelcomeBanner = justSubscribed && state === "pro";
+
   return (
     <>
+      {/* Top nav — back to tracker */}
+      <div className="-mt-6 sm:-mt-10 mb-2">
+        <a
+          href="/tracker/dashboard"
+          className="inline-flex items-center gap-1.5 text-sm text-white/50 hover:text-white/80 transition"
+        >
+          <span aria-hidden>←</span> Back to Dashboard
+        </a>
+      </div>
+
       {/* Hero */}
       <div className="text-center">
         <h1 className="font-playfair text-3xl sm:text-4xl font-bold text-white mb-3">
@@ -86,7 +101,7 @@ export default function ProClient({
         </p>
       </div>
 
-      {justSubscribed && (
+      {showWelcomeBanner && (
         <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-6 py-5 text-center">
           <p className="font-semibold text-emerald-300">Welcome to Pro 🎉</p>
           <p className="text-sm text-emerald-300/70 mt-1">
