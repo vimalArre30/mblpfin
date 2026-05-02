@@ -1,129 +1,145 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { verifyWebhookSignature, classifyPlanId } from "@/lib/razorpay";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+export const runtime = "nodejs";
 
-type SubscriptionEntity = {
-  id: string;
-  current_end: number;
-  notes?: Record<string, string | undefined>;
-};
-
-type RazorpayEvent = {
-  event: string;
-  payload: {
-    subscription: {
-      entity: SubscriptionEntity;
-    };
-  };
-};
-
-// ── Service-role Supabase client (bypasses RLS) ───────────────────────────────
-
-function createServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
-// ── Handler ───────────────────────────────────────────────────────────────────
-
+/**
+ * Razorpay subscription webhook.
+ *
+ * Reads the raw body BEFORE parsing for HMAC verification.
+ * Uses the service-role Supabase client to bypass RLS.
+ *
+ * Handles:
+ *  - subscription.activated   → plan = pro, plan_expires_at = current_end, status = active
+ *  - subscription.charged     → plan_expires_at refreshed each renewal
+ *  - subscription.cancelled   → mark cancel_requested_at; downgrade is date-driven via isProActive
+ *  - subscription.completed   → plan = free, status = expired (full term naturally ended)
+ *  - subscription.halted      → status = halted (failed payment after retries)
+ */
 export async function POST(req: NextRequest) {
-  // Must read raw body before any parsing — signature is over the exact bytes
   const rawBody = await req.text();
-  const signature = req.headers.get("x-razorpay-signature") ?? "";
+  const signature = req.headers.get("x-razorpay-signature");
 
-  const expectedSig = crypto
-    .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET!)
-    .update(rawBody)
-    .digest("hex");
-
-  if (signature !== expectedSig) {
-    console.error("[webhook] signature mismatch — possible spoofed request");
-    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  if (!signature) {
+    return NextResponse.json({ error: "missing signature" }, { status: 401 });
   }
 
-  let event: RazorpayEvent;
-
+  let valid = false;
   try {
-    event = JSON.parse(rawBody) as RazorpayEvent;
+    valid = verifyWebhookSignature(rawBody, signature);
+  } catch (e) {
+    console.error("[razorpay/webhook] verify error:", e);
+    return NextResponse.json({ error: "verify failed" }, { status: 500 });
+  }
+
+  if (!valid) {
+    return NextResponse.json({ error: "invalid signature" }, { status: 401 });
+  }
+
+  let payload: {
+    event: string;
+    payload: { subscription: { entity: SubEntity } };
+  };
+  try {
+    payload = JSON.parse(rawBody);
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return NextResponse.json({ error: "invalid json" }, { status: 400 });
   }
 
-  const eventType = event.event;
-  const subscription = event.payload?.subscription?.entity;
+  const event = payload.event;
+  const sub = payload.payload?.subscription?.entity;
 
-  console.log(`[webhook] received: ${eventType}`);
-
-  // Unhandled events — acknowledge immediately so Razorpay does not retry
-  if (
-    eventType !== "subscription.activated" &&
-    eventType !== "subscription.charged" &&
-    eventType !== "subscription.cancelled" &&
-    eventType !== "subscription.expired"
-  ) {
+  if (!sub) {
+    // Not a subscription event; ack and move on
     return NextResponse.json({ received: true });
   }
 
-  const userId = subscription?.notes?.user_id;
-
+  const userId = sub.notes?.user_id;
   if (!userId) {
-    console.error(
-      `[webhook] ${eventType}: no user_id in subscription notes — cannot update plan`
-    );
-    // Still return 200 so Razorpay does not keep retrying an unresolvable event
+    console.warn("[razorpay/webhook] subscription has no user_id in notes:", sub.id);
     return NextResponse.json({ received: true });
   }
 
-  const supabase = createServiceClient();
+  const supabase = createAdminClient();
+  const { isDiscount } = classifyPlanId(sub.plan_id);
 
-  if (eventType === "subscription.activated" || eventType === "subscription.charged") {
-    // Activate pro or extend the billing period on renewal
-    const planExpiresAt = new Date(subscription.current_end * 1000).toISOString();
-
-    const { error } = await supabase
-      .from("user_profiles")
-      .update({
+  switch (event) {
+    case "subscription.activated":
+    case "subscription.charged": {
+      const expiresAtMs = (sub.current_end ?? sub.charge_at ?? 0) * 1000;
+      const update: Record<string, unknown> = {
         plan: "pro",
-        plan_expires_at: planExpiresAt,
+        plan_expires_at: expiresAtMs ? new Date(expiresAtMs).toISOString() : null,
+        subscription_id: sub.id,
+        subscription_status: "active",
         updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId);
-
-    if (error) {
-      console.error(`[webhook] ${eventType} — update error:`, error.message);
-    } else {
-      console.log(
-        `[webhook] ${eventType}: user ${userId} upgraded to pro, expires ${planExpiresAt}`
-      );
+      };
+      // If this is the discount-plan subscription kicking in (post-swap), record it
+      if (isDiscount && event === "subscription.activated") {
+        update.discount_applied = true;
+        update.cancel_requested_at = null; // discount swap clears cancel state
+      }
+      await supabase.from("user_profiles").update(update).eq("user_id", userId);
+      break;
     }
-  } else if (eventType === "subscription.cancelled") {
-    // Do not downgrade immediately — user has paid for the current period.
-    // isProActive() in lib/tracker/plan.ts will handle expiry automatically
-    // once plan_expires_at passes, so no DB update is needed here.
-    console.log(
-      `[webhook] subscription.cancelled: user ${userId} retains pro access until plan_expires_at`
-    );
-  } else if (eventType === "subscription.expired") {
-    // Billing period fully ended — revert to free
-    const { error } = await supabase
-      .from("user_profiles")
-      .update({
-        plan: "free",
-        plan_expires_at: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId);
 
-    if (error) {
-      console.error("[webhook] subscription.expired — update error:", error.message);
-    } else {
-      console.log(`[webhook] subscription.expired: user ${userId} reverted to free`);
+    case "subscription.cancelled": {
+      // Only mark as cancelling — actual downgrade happens when expired event fires
+      await supabase
+        .from("user_profiles")
+        .update({
+          cancel_requested_at: new Date().toISOString(),
+          subscription_status: "cancelling",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId)
+        .eq("subscription_id", sub.id); // only update if this is still their active sub
+      break;
     }
+
+    case "subscription.completed": {
+      await supabase
+        .from("user_profiles")
+        .update({
+          plan: "free",
+          plan_expires_at: null,
+          subscription_id: null,
+          cancel_requested_at: null,
+          subscription_status: "expired",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId)
+        .eq("subscription_id", sub.id);
+      break;
+    }
+
+    case "subscription.halted": {
+      await supabase
+        .from("user_profiles")
+        .update({
+          subscription_status: "halted",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId)
+        .eq("subscription_id", sub.id);
+      break;
+    }
+
+    default:
+      // Unhandled events: pending, paused, resumed, authenticated, etc.
+      break;
   }
 
   return NextResponse.json({ received: true });
 }
+
+type SubEntity = {
+  id: string;
+  plan_id: string;
+  status: string;
+  current_start?: number;
+  current_end?: number;
+  charge_at?: number;
+  notes?: { user_id?: string; [key: string]: string | undefined };
+};

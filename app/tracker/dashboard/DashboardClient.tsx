@@ -9,6 +9,9 @@ import MonthlyChart, { type MonthlyDataPoint } from "@/components/tracker/Monthl
 import NeedWantRatio, { type NeedWantData } from "@/components/tracker/NeedWantRatio";
 import TransactionFeed, { type Transaction } from "@/components/tracker/TransactionFeed";
 import PeriodFilter from "@/components/tracker/PeriodFilter";
+import EntryCountPill from "@/components/tracker/EntryCountPill";
+import ExpiredBanner from "@/components/tracker/ExpiredBanner";
+import HaltedBanner from "@/components/tracker/HaltedBanner";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
 
 interface Props {
@@ -18,6 +21,13 @@ interface Props {
   needWant: NeedWantData;
   transactions: Transaction[];
   wallets: Wallet[];
+  paywall: {
+    entryCount: number;
+    proActive: boolean;
+    isHalted: boolean;
+    showExpiredBanner: boolean;
+    planExpiresAt: string | null;
+  };
 }
 
 function fmt(n: number) {
@@ -30,6 +40,7 @@ export default function DashboardClient({
   needWant,
   transactions,
   wallets,
+  paywall,
 }: Props) {
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
@@ -133,20 +144,14 @@ export default function DashboardClient({
   return (
     <>
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 pb-24 space-y-8">
-        {/* Pro upgrade success banner */}
-        {showUpgradedBanner && (
-          <div className="bg-amber-500/15 border border-amber-500/30 rounded-xl px-4 py-3 flex items-center justify-between">
-            <p className="text-sm text-amber-300 font-medium">
-              🎉 You&apos;re now on Pro! Unlimited entries unlocked.
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowUpgradedBanner(false)}
-              className="text-amber-400/60 hover:text-amber-400 transition ml-4 shrink-0"
-              aria-label="Dismiss"
-            >
-              ✕
-            </button>
+        {/* Paywall banners — top of dashboard, ordered by severity */}
+        {paywall.isHalted && <HaltedBanner />}
+        {paywall.showExpiredBanner && (
+          <ExpiredBanner planExpiresAt={paywall.planExpiresAt} />
+        )}
+        {!paywall.proActive && !paywall.isHalted && (
+          <div className="flex justify-end">
+            <EntryCountPill entryCount={paywall.entryCount} />
           </div>
         )}
 

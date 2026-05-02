@@ -1,9 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
-
-type Plan = "monthly" | "annual";
+import { startSubscriptionCheckout } from "@/lib/razorpay-checkout";
 
 function CheckIcon() {
   return <span className="text-amber-400 font-bold">✓</span>;
@@ -34,7 +32,7 @@ function PricingCard({
   cta,
   highlight,
   loading,
-  onCheckout,
+  onSubscribe,
 }: {
   label: string;
   price: string;
@@ -42,7 +40,7 @@ function PricingCard({
   cta: string;
   highlight?: boolean;
   loading: boolean;
-  onCheckout: () => void;
+  onSubscribe: () => void;
 }) {
   return (
     <div
@@ -61,15 +59,15 @@ function PricingCard({
       <p className="text-4xl font-bold text-white leading-none">{price}</p>
       <p className="text-sm text-white/40 mt-1 mb-6">{sub}</p>
       <button
-        onClick={onCheckout}
+        onClick={onSubscribe}
         disabled={loading}
-        className={`w-full rounded-xl py-3 text-sm font-semibold transition mt-auto disabled:opacity-60 disabled:cursor-not-allowed ${
+        className={`w-full rounded-xl py-3 text-sm font-semibold transition mt-auto disabled:opacity-50 disabled:cursor-not-allowed ${
           highlight
             ? "bg-amber-500 hover:bg-amber-400 text-black"
             : "bg-white/10 hover:bg-white/15 text-white border border-white/15"
         }`}
       >
-        {loading ? "Processing…" : cta}
+        {loading ? "Loading…" : cta}
       </button>
     </div>
   );
@@ -93,7 +91,7 @@ const FAQS = [
   },
   {
     q: "Can I cancel anytime?",
-    a: "Yes. You can cancel your subscription at any time from your account settings. You'll retain Pro access until the end of your billing period.",
+    a: "Yes. You can cancel your subscription at any time from your Pro page. You'll retain Pro access until the end of your billing period.",
   },
   {
     q: "What payment methods are supported?",
@@ -105,97 +103,55 @@ const FAQS = [
   },
 ];
 
-export default function PricingClient() {
-  const [loadingPlan, setLoadingPlan] = useState<Plan | null>(null);
+export default function PricingClient({
+  prefill,
+}: {
+  prefill?: { name?: string; email?: string };
+}) {
+  const [loading, setLoading] = useState<"monthly" | "annual" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleCheckout(plan: Plan) {
-    setLoadingPlan(plan);
+  async function subscribe(interval: "monthly" | "annual") {
     setError(null);
-
+    setLoading(interval);
     try {
-      const res = await fetch("/api/razorpay/create-subscription", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
-      });
-
-      const data = await res.json();
-
-      if (res.status === 409) {
-        setError("already_subscribed");
-        setLoadingPlan(null);
-        return;
-      }
-
-      if (!res.ok) {
-        setError(data.error ?? "Failed to start checkout — please try again.");
-        setLoadingPlan(null);
-        return;
-      }
-
-      await loadRazorpayScript();
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rzp = new (window as any).Razorpay({
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        subscription_id: data.subscriptionId,
-        name: "MrBottomLine",
-        description:
-          plan === "monthly" ? "Pro Monthly — ₹199/month" : "Pro Annual — ₹899/year",
-        theme: { color: "#F59E0B" },
-        handler: () => {
-          window.location.href = "/tracker?upgraded=true";
-        },
-      });
-
-      rzp.open();
-    } catch {
-      setError("Something went wrong — please try again.");
+      await startSubscriptionCheckout({ interval, prefill });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Something went wrong";
+      setError(msg);
     } finally {
-      setLoadingPlan(null);
+      setLoading(null);
     }
   }
 
   return (
     <div className="space-y-16">
       {/* Pricing cards */}
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-xl mx-auto">
-          <PricingCard
-            label="Monthly"
-            price="₹199"
-            sub="/month"
-            cta="Get Started — ₹199/month"
-            loading={loadingPlan === "monthly"}
-            onCheckout={() => handleCheckout("monthly")}
-          />
-          <PricingCard
-            label="Annual"
-            price="₹899"
-            sub="₹75/month · billed yearly"
-            cta="Get Started — ₹899/year"
-            highlight
-            loading={loadingPlan === "annual"}
-            onCheckout={() => handleCheckout("annual")}
-          />
-        </div>
-
-        {error && (
-          error === "already_subscribed" ? (
-            <p className="text-center text-sm text-amber-300 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3 max-w-xl mx-auto">
-              You&apos;re already on Pro!{" "}
-              <Link href="/tracker" className="underline underline-offset-2 hover:text-amber-200 transition">
-                Head to the tracker to continue.
-              </Link>
-            </p>
-          ) : (
-            <p className="text-center text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-3 max-w-xl mx-auto">
-              {error}
-            </p>
-          )
-        )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-xl mx-auto">
+        <PricingCard
+          label="Monthly"
+          price="₹199"
+          sub="/month"
+          cta="Get Started — ₹199/month"
+          loading={loading === "monthly"}
+          onSubscribe={() => subscribe("monthly")}
+        />
+        <PricingCard
+          label="Annual"
+          price="₹899"
+          sub="₹75/month · billed yearly"
+          cta="Get Started — ₹899/year"
+          loading={loading === "annual"}
+          onSubscribe={() => subscribe("annual")}
+          highlight
+        />
       </div>
+
+      {error && (
+        <div className="max-w-xl mx-auto -mt-10 px-5 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm text-center">
+          {error}
+        </div>
+      )}
 
       {/* Feature comparison table */}
       <div>
@@ -241,6 +197,17 @@ export default function PricingClient() {
         </div>
       </div>
 
+      {/* Bottom CTA */}
+      <div className="text-center space-y-3 pb-4">
+        <p className="text-white/40 text-sm">Ready to go unlimited?</p>
+        <button
+          onClick={() => subscribe("annual")}
+          disabled={loading !== null}
+          className="bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm rounded-xl px-8 py-3 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? "Loading…" : "Upgrade Now →"}
+        </button>
+      </div>
     </div>
   );
 }

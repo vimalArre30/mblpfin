@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
     entry_type?: string;
     note?: string | null;
     label_ids?: string[];
+    spending_type?: string | null;
   };
 
   try {
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { wallet_id, category_id, amount, description, date, entry_type, note, label_ids } = body;
+  const { wallet_id, category_id, amount, description, date, entry_type, note, label_ids, spending_type } = body;
 
   if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
     return NextResponse.json({ error: "amount is required and must be positive" }, { status: 400 });
@@ -76,6 +77,7 @@ export async function POST(req: NextRequest) {
       entry_type: entry_type ?? "expense",
       type: entry_type === "income" ? "credit" : "debit",
       is_opening_balance: false,
+      spending_type: entry_type === 'expense' ? (spending_type ?? null) : null,
       ...(noteValue ? { note: noteValue } : {}),
     })
     .select("id")
