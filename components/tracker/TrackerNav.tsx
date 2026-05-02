@@ -13,6 +13,7 @@ const LINKS = [
 
 export default function TrackerNav() {
   const pathname = usePathname();
+  const proActive = pathname === "/pro";
 
   return (
     <nav className="border-b border-white/8 px-6 py-0 flex items-center gap-1 overflow-x-auto">
@@ -32,6 +33,21 @@ export default function TrackerNav() {
           </Link>
         );
       })}
+
+      {/* Pro link — right-aligned, amber accent so it stands out from the main nav */}
+      <div className="ml-auto pr-1 shrink-0">
+        <Link
+          href="/pro"
+          className={`relative inline-flex items-center gap-1.5 px-3 py-3.5 text-sm font-semibold transition whitespace-nowrap ${
+            proActive
+              ? "text-amber-300 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-amber-400"
+              : "text-amber-400/85 hover:text-amber-300"
+          }`}
+          aria-label="Manage your MrBottomLine Pro subscription"
+        >
+          <span aria-hidden>★</span> Pro
+        </Link>
+      </div>
     </nav>
   );
 }
