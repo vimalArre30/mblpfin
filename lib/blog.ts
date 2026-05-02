@@ -109,6 +109,24 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
 }
 
 /**
+ * Returns a single post by slug, with the body as RAW MARKDOWN (no HTML conversion).
+ *
+ * Used by the mobile app's /api/posts/[slug] endpoint. Flutter renders the markdown
+ * natively via flutter_markdown — keeping it raw means no HTML cleanup downstream.
+ *
+ * @param slug - The URL-friendly slug matching the markdown filename (without .md).
+ * @returns Object with PostMeta fields + `body` (raw markdown string), or null if no matching file.
+ */
+export function getPostMarkdownBySlug(
+  slug: string
+): (PostMeta & { body: string }) | null {
+  const filePath = path.join(POSTS_DIR, `${slug}.md`);
+  if (!fs.existsSync(filePath)) return null;
+  const { data, content: rawBody } = readPostFile(`${slug}.md`);
+  return { ...(data as PostMeta), body: rawBody };
+}
+
+/**
  * Returns a deduplicated list of every category that appears across published posts.
  *
  * Useful for building category filter UI or generating static category pages.
