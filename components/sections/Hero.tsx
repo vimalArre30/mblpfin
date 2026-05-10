@@ -1,5 +1,9 @@
 import Image from "next/image";
-import Link from "next/link";
+import DisabledLink from "@/components/ui/DisabledLink";
+
+// NOTE: External project links temporarily disabled for Razorpay account verification (May 2026).
+// To restore: replace each <DisabledLink> below with the commented-out <Link href="..."> alongside it,
+// re-add `import Link from "next/link";` above, and delete this comment block.
 
 export default function Hero() {
   return (
@@ -39,22 +43,14 @@ export default function Hero() {
                 Products &amp; experiences — digital and physical.
               </p>
               <div className="flex flex-wrap gap-4">
-                <Link
-                  href="https://arrevoice.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-inter text-xs font-semibold uppercase tracking-[0.12em] text-navy hover:text-navy-dark transition-colors"
-                >
+                {/* Original: <Link href="https://arrevoice.com" target="_blank" rel="noopener noreferrer" ...> */}
+                <DisabledLink className="font-inter text-xs font-semibold uppercase tracking-[0.12em] text-navy hover:text-navy-dark transition-colors">
                   Arré Voice →
-                </Link>
-                <Link
-                  href="https://serenewindsor.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-inter text-xs font-semibold uppercase tracking-[0.12em] text-navy hover:text-navy-dark transition-colors"
-                >
+                </DisabledLink>
+                {/* Original: <Link href="https://serenewindsor.com" target="_blank" rel="noopener noreferrer" ...> */}
+                <DisabledLink className="font-inter text-xs font-semibold uppercase tracking-[0.12em] text-navy hover:text-navy-dark transition-colors">
                   Serene Windsor →
-                </Link>
+                </DisabledLink>
               </div>
             </div>
 
@@ -66,14 +62,10 @@ export default function Hero() {
               <p className="font-inter text-body text-[15px] mb-4">
                 Capital into high-agency founders. Revenue-First. Region-First.
               </p>
-              <Link
-                href="https://www.bottomlineventures.vc"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-inter text-xs font-semibold uppercase tracking-[0.12em] text-navy hover:text-navy-dark transition-colors"
-              >
+              {/* Original: <Link href="https://www.bottomlineventures.vc" target="_blank" rel="noopener noreferrer" ...> */}
+              <DisabledLink className="font-inter text-xs font-semibold uppercase tracking-[0.12em] text-navy hover:text-navy-dark transition-colors">
                 Bottomline Ventures →
-              </Link>
+              </DisabledLink>
             </div>
 
             {/* I create */}
@@ -84,14 +76,10 @@ export default function Hero() {
               <p className="font-inter text-body text-[15px] mb-4">
                 Content for builders and operators. Insight-first, not entertainment-first.
               </p>
-              <Link
-                href="https://www.youtube.com/@mrbottomline"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-inter text-xs font-semibold uppercase tracking-[0.12em] text-navy hover:text-navy-dark transition-colors"
-              >
+              {/* Original: <Link href="https://www.youtube.com/@mrbottomline" target="_blank" rel="noopener noreferrer" ...> */}
+              <DisabledLink className="font-inter text-xs font-semibold uppercase tracking-[0.12em] text-navy hover:text-navy-dark transition-colors">
                 MrBottomLine on YouTube →
-              </Link>
+              </DisabledLink>
             </div>
 
           </div>
