@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
 
+Disallow: /api/
+Disallow: /tracker
+Disallow: /tracker/
+
 Sitemap: https://www.mrbottomline.club/sitemap.xml

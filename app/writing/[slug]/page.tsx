@@ -7,6 +7,11 @@ import Footer from "@/components/sections/Footer";
 import { getAllPosts, getPostBySlug } from "@/lib/blog";
 import type { PostMeta } from "@/lib/blog";
 import { BRAND } from "@/lib/constants";
+import {
+  articleSchema,
+  breadcrumbSchema,
+  schemaToJson,
+} from "@/lib/seo/schema";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -137,26 +142,20 @@ export default async function PostPage({ params }: PageProps) {
   const allPosts = getAllPosts();
   const relatedPosts = getRelatedPosts(allPosts, post.slug, post.category);
 
-  // ── JSON-LD structured data (Article schema) ───────────────────────────
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline: post.title,
+  // ── JSON-LD structured data (Article + Breadcrumb) ─────────────────────
+  const article = articleSchema({
+    title: post.title,
     description: post.excerpt,
     datePublished: post.date,
-    url: `${BRAND.url}/writing/${post.slug}`,
-    author: {
-      "@type": "Person",
-      name: "Vimal",
-      url: BRAND.url,
-    },
-    publisher: {
-      "@type": "Organization",
-      name: "Mr. Bottom Line",
-      url: BRAND.url,
-    },
-    ...(post.coverImage && { image: post.coverImage }),
-  };
+    slug: post.slug,
+    coverImage: post.coverImage,
+  });
+
+  const breadcrumbs = breadcrumbSchema([
+    { name: "Home", url: BRAND.url },
+    { name: "Writing", url: `${BRAND.url}/writing` },
+    { name: post.title, url: `${BRAND.url}/writing/${post.slug}` },
+  ]);
 
   return (
     <>
@@ -165,7 +164,11 @@ export default async function PostPage({ params }: PageProps) {
       {/* JSON-LD — placed in body; Google crawls it from anywhere in the HTML */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: schemaToJson(article) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: schemaToJson(breadcrumbs) }}
       />
 
       <main className="bg-white">

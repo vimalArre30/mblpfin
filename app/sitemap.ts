@@ -8,8 +8,12 @@ import { BRAND } from "@/lib/constants";
  *
  * Includes:
  * - Homepage
- * - Blog index (/blog)
- * - All published blog posts (/blog/[slug])
+ * - /pro (MBL PFin Pro subscription page — conversion target)
+ * - /writing index + all published blog posts (/writing/[slug])
+ * - /privacy and /delete-account (low priority but should be indexed)
+ *
+ * Private app routes (/tracker/*) are intentionally excluded — blocked
+ * via public/robots.txt + per-layout robots:{index:false}.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const posts = getAllPosts();
@@ -33,11 +37,29 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1.0,
     },
     {
+      url: `${BRAND.url}/pro`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
       url: `${BRAND.url}/writing`,
       lastModified: latestPostDate,
       changeFrequency: "weekly",
       priority: 0.6,
     },
     ...postEntries,
+    {
+      url: `${BRAND.url}/privacy`,
+      lastModified: new Date("2026-05-02"),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: `${BRAND.url}/delete-account`,
+      lastModified: new Date("2026-05-10"),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
   ];
 }
