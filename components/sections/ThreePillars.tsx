@@ -1,9 +1,5 @@
+import Link from "next/link";
 import SectionLabel from "@/components/ui/SectionLabel";
-import DisabledLink from "@/components/ui/DisabledLink";
-
-// NOTE: External project links temporarily disabled for Razorpay account verification (May 2026).
-// To restore: replace each <DisabledLink> below with the commented-out <Link href="..."> alongside it,
-// re-add `import Link from "next/link";` above, and delete this comment block.
 
 export default function ThreePillars() {
   return (
@@ -36,10 +32,14 @@ export default function ThreePillars() {
               <p className="font-inter text-blue-100 leading-relaxed text-[15px] flex-1">
                 India's short-form social audio app — a platform where anyone can create, share, and discover 30-second Voicepods. Built from the ground up, overseeing product and engineering across growth, monetisation, and platform stability.
               </p>
-              {/* Original: <Link href="https://arrevoice.com" target="_blank" rel="noopener noreferrer" ...> */}
-              <DisabledLink className="mt-8 inline-flex items-center gap-2 font-inter text-sm font-semibold text-white hover:text-blue-200 transition-colors">
+              <Link
+                href="https://arrevoice.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-8 inline-flex items-center gap-2 font-inter text-sm font-semibold text-white hover:text-blue-200 transition-colors"
+              >
                 Visit Arré Voice →
-              </DisabledLink>
+              </Link>
             </div>
 
             {/* Serene Windsor — light card */}
@@ -54,10 +54,14 @@ export default function ThreePillars() {
               <p className="font-inter text-body leading-relaxed text-[15px] flex-1">
                 A farmstay being built deliberately and patiently. Serene Windsor is about craft, taste, and quiet quality over loud marketing. Brand is capital. Perception compounds. Opening for guests July 2026.
               </p>
-              {/* Original: <Link href="https://serenewindsor.com" target="_blank" rel="noopener noreferrer" ...> */}
-              <DisabledLink className="mt-8 inline-flex items-center gap-2 font-inter text-sm font-semibold text-navy hover:text-navy-dark transition-colors">
+              <Link
+                href="https://serenewindsor.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-8 inline-flex items-center gap-2 font-inter text-sm font-semibold text-navy hover:text-navy-dark transition-colors"
+              >
                 Visit Serene Windsor →
-              </DisabledLink>
+              </Link>
             </div>
           </div>
         </div>
@@ -78,10 +82,14 @@ export default function ThreePillars() {
               <p className="font-inter text-zinc-300 leading-relaxed text-[16px] mb-8 max-w-lg">
                 Bottomline Ventures is a ₹20 Crore revenue-stage fund backing Tier 2 India founders — operators in cities like Coimbatore, Surat, Indore, and Vizag who have paying customers and zero institutional attention. Revenue-First. Region-First. Disciplined by Design.
               </p>
-              {/* Original: <Link href="https://www.bottomlineventures.vc" target="_blank" rel="noopener noreferrer" ...> */}
-              <DisabledLink className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-amber-400 text-ink font-inter font-bold text-sm hover:bg-amber-300 transition-colors shadow-lg">
+              <Link
+                href="https://www.bottomlineventures.vc"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-amber-400 text-ink font-inter font-bold text-sm hover:bg-amber-300 transition-colors shadow-lg"
+              >
                 Visit Bottomline Ventures →
-              </DisabledLink>
+              </Link>
             </div>
 
             {/* Right: BV stats widget */}
@@ -160,10 +168,14 @@ export default function ThreePillars() {
               <p className="font-inter text-body leading-relaxed text-[15px] flex-1 mb-6">
                 Product breakdowns, business model analysis, capital allocation thinking, and practical frameworks for builders and operators. Every video earns its watch time.
               </p>
-              {/* Original: <Link href="https://www.youtube.com/@mrbottomline" target="_blank" rel="noopener noreferrer" ...> */}
-              <DisabledLink className="font-inter text-sm font-semibold text-navy hover:text-navy-dark transition-colors">
+              <Link
+                href="https://www.youtube.com/@mrbottomline"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-inter text-sm font-semibold text-navy hover:text-navy-dark transition-colors"
+              >
                 Watch the channel →
-              </DisabledLink>
+              </Link>
             </div>
 
             {/* Tamil Channel — coming soon */}
