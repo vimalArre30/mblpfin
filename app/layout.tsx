@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Playfair_Display, Inter } from "next/font/google";
 import "./globals.css";
 import { BRAND } from "@/lib/constants";
@@ -7,6 +8,10 @@ import {
   personSchema,
   schemaToJson,
 } from "@/lib/seo/schema";
+
+// Google Analytics 4 measurement ID — set NEXT_PUBLIC_GA_ID in Vercel + .env.local.
+// Falsy means GA is disabled (e.g. local dev without the env var set).
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -93,19 +98,31 @@ export default function RootLayout({
           }}
         />
 
-        {/* Plausible Analytics — privacy-friendly visitor counter.
-            Uses the default plausible.io hosted script. The data-domain
-            attribute MUST match the domain you registered in your Plausible
-            dashboard. The "outbound-links" extension tracks clicks on
-            external links (useful for measuring CTA performance).
-            Docs: https://plausible.io/docs/plausible-script */}
-        <script
-          defer
-          data-domain="mrbottomline.club"
-          src="https://plausible.io/js/script.outbound-links.js"
-        />
       </head>
-      <body>{children}</body>
+      <body>
+        {/* Google Analytics 4 — gtag.js.
+            Loads only when NEXT_PUBLIC_GA_ID is set (production + preview).
+            next/script with strategy="afterInteractive" ensures it doesn't
+            block initial render. Same GA4 property powers the Flutter app
+            via Firebase Analytics — one dashboard, web + Android. */}
+        {GA_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="ga4-init" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${GA_ID}', { anonymize_ip: true });
+              `}
+            </Script>
+          </>
+        )}
+        {children}
+      </body>
     </html>
   );
 }
