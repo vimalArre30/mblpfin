@@ -5,7 +5,7 @@ import type { CategorySpend } from "@/components/tracker/SpendByCategory";
 import type { MonthlyDataPoint } from "@/components/tracker/MonthlyChart";
 import type { NeedWantData } from "@/components/tracker/NeedWantRatio";
 import type { Transaction } from "@/components/tracker/TransactionFeed";
-import { getUserPlan, isProActive } from "@/lib/tracker/plan";
+import { getUserPlan, isProActive, isOnboarded } from "@/lib/tracker/plan";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +27,13 @@ export default async function DashboardPage() {
 
   // Fetch profile for paywall pill + banners
   const profile = await getUserPlan(supabase, user.id);
+
+  // Onboarding gate — if name + username not yet set, force the user
+  // through /tracker/onboarding before showing the dashboard.
+  if (!isOnboarded(profile)) {
+    redirect("/tracker/onboarding");
+  }
+
   const proActive = profile ? isProActive(profile) : false;
   const isHalted = profile?.subscription_status === "halted";
   // "Welcome back" expired banner: previously had Pro (plan_expires_at set) but it lapsed

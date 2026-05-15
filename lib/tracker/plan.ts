@@ -12,6 +12,10 @@ export type UserProfile = {
   cancel_requested_at?: string | null;
   discount_applied?: boolean | null;
   subscription_status?: SubscriptionStatus | null;
+  // Onboarding identity (migration 005). NULL → user has not completed
+  // onboarding yet; show /tracker/onboarding before /tracker/dashboard.
+  name?: string | null;
+  username?: string | null;
 };
 
 export async function getUserPlan(
@@ -21,11 +25,20 @@ export async function getUserPlan(
   const { data } = await supabase
     .from("user_profiles")
     .select(
-      "plan, plan_expires_at, entry_count, subscription_id, cancel_requested_at, discount_applied, subscription_status"
+      "plan, plan_expires_at, entry_count, subscription_id, cancel_requested_at, discount_applied, subscription_status, name, username"
     )
     .eq("user_id", userId)
     .single();
   return (data as UserProfile) ?? null;
+}
+
+/** True if onboarding v1 is complete (name + username present + non-empty). */
+export function isOnboarded(profile: UserProfile | null): boolean {
+  if (!profile) return false;
+  const hasName = !!profile.name && profile.name.trim().length > 0;
+  const hasUsername =
+    !!profile.username && profile.username.trim().length > 0;
+  return hasName && hasUsername;
 }
 
 export function isProActive(profile: UserProfile): boolean {

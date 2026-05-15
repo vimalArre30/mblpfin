@@ -208,6 +208,19 @@ export default function AddEntryModal({
       setError("Enter a valid amount greater than 0.");
       return;
     }
+    // Cap at ₹10 lakhs to prevent UI breakage + DB precision overflows.
+    // Single-entry cap; users can split across multiple entries for larger sums.
+    if (parsedAmount > 1_000_000) {
+      setError("Maximum amount per entry is ₹10,00,000 (₹10 lakhs).");
+      return;
+    }
+
+    // Future-date guard — entries cannot be logged for dates beyond today.
+    const todayISO = new Date().toISOString().split("T")[0];
+    if (date > todayISO) {
+      setError("Date cannot be in the future.");
+      return;
+    }
 
     if (entryType === "transfer") {
       if (!walletId || !toWalletId) { setError("Select both source and destination wallets."); return; }
@@ -422,12 +435,14 @@ export default function AddEntryModal({
                   type="number"
                   inputMode="decimal"
                   min="0.01"
+                  max="1000000"
                   step="0.01"
                   value={amount}
                   onChange={(e) => { setAmount(e.target.value); setError(""); }}
                   placeholder="0.00"
                   className="w-full bg-white/10 border border-white/15 rounded-lg pl-8 pr-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition"
                 />
+                <p className="text-[10px] text-white/30 mt-1">Max ₹10,00,000 per entry</p>
               </div>
             </div>
 
@@ -563,6 +578,7 @@ export default function AddEntryModal({
                   <input
                     type="date"
                     value={date}
+                    max={new Date().toISOString().split("T")[0]}
                     onChange={(e) => setDate(e.target.value)}
                     className="w-full bg-white/10 border border-white/15 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 transition [color-scheme:dark]"
                   />
