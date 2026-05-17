@@ -111,10 +111,12 @@ function RelatedPostCard({ post }: { post: PostMeta }) {
       className="group flex flex-col bg-white rounded-2xl p-7 border border-border shadow-sm hover:shadow-md transition-shadow duration-200"
     >
       <div className="flex items-center justify-between mb-3">
-        <span className="font-inter text-xs font-semibold uppercase tracking-[0.12em] text-navy/60">
+        {/* text-navy/80 (was /60) and text-body/70 (was /40) for WCAG AA
+            contrast on white background. Lighthouse a11y audit flagged both. */}
+        <span className="font-inter text-xs font-semibold uppercase tracking-[0.12em] text-navy/80">
           {post.category}
         </span>
-        <span className="font-inter text-xs text-body/40">{post.readTime}</span>
+        <span className="font-inter text-xs text-body/70">{post.readTime}</span>
       </div>
       <h3 className="font-playfair text-lg font-bold text-ink leading-snug mb-3 group-hover:text-navy transition-colors duration-150">
         {post.title}
@@ -175,9 +177,11 @@ export default async function PostPage({ params }: PageProps) {
         <div className="max-w-[720px] mx-auto px-6 lg:px-8 py-12 lg:py-20">
 
           {/* ── Back link ── */}
+          {/* text-body/75 (was /60) for WCAG AA contrast on white background.
+              Lighthouse a11y audit flagged this at /60. */}
           <Link
             href="/writing"
-            className="inline-flex items-center gap-2 font-inter text-sm font-medium text-body/60 hover:text-navy transition-colors duration-150 mb-10 group"
+            className="inline-flex items-center gap-2 font-inter text-sm font-medium text-body/75 hover:text-navy transition-colors duration-150 mb-10 group"
           >
             <span className="transition-transform duration-150 group-hover:-translate-x-0.5">←</span>
             Back to Writing
@@ -191,7 +195,8 @@ export default async function PostPage({ params }: PageProps) {
                 {post.category}
               </span>
               <span className="text-border select-none">·</span>
-              <span className="font-inter text-xs text-body/50">{post.readTime}</span>
+              {/* /70 (was /50) for WCAG AA contrast on white background. */}
+              <span className="font-inter text-xs text-body/70">{post.readTime}</span>
             </div>
 
             {/* Title */}
@@ -206,9 +211,10 @@ export default async function PostPage({ params }: PageProps) {
 
             {/* Date */}
             <div className="flex items-center gap-2 pb-8 border-b border-border">
+              {/* /70 (was /50) for WCAG AA contrast on white background. */}
               <time
                 dateTime={post.date}
-                className="font-inter text-sm text-body/50"
+                className="font-inter text-sm text-body/70"
               >
                 {formatDate(post.date)}
               </time>
@@ -244,9 +250,10 @@ export default async function PostPage({ params }: PageProps) {
 
           {/* ── End-of-article divider ── */}
           <div className="mt-16 pt-8 border-t border-border">
+            {/* /70 (was /50) for WCAG AA contrast on white background. */}
             <Link
               href="/writing"
-              className="inline-flex items-center gap-2 font-inter text-sm font-medium text-body/50 hover:text-navy transition-colors duration-150 group"
+              className="inline-flex items-center gap-2 font-inter text-sm font-medium text-body/70 hover:text-navy transition-colors duration-150 group"
             >
               <span className="transition-transform duration-150 group-hover:-translate-x-0.5">←</span>
               All Writing

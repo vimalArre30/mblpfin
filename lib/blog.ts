@@ -102,9 +102,25 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
     .use(remarkHtml, { sanitize: false })
     .process(rawBody);
 
+  // Bump heading levels by one (h3 → h2, h4 → h3, etc.) so the page's
+  // <h1> (post title) → first article heading is a clean h1 → h2 transition.
+  // Without this, articles using `###` as the first heading produce an
+  // h1 → h3 skip that Lighthouse flags as a heading-order accessibility
+  // violation.
+  //
+  // Single-pass replace via a callback so we don't re-process already-converted
+  // tags (chained .replace() calls cascade and collapse everything to h2).
+  // h1 and h2 are left alone; h3-h6 each move up one level.
+  const content = processed
+    .toString()
+    .replace(/<(\/?)h([3-6])/g, (_match, slash: string, level: string) => {
+      const promoted = parseInt(level, 10) - 1;
+      return `<${slash}h${promoted}`;
+    });
+
   return {
     ...(data as PostMeta),
-    content: processed.toString(),
+    content,
   };
 }
 

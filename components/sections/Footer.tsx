@@ -62,7 +62,9 @@ export default function Footer() {
         <p className="font-inter text-xs text-blue-300">
           {FOOTER.copyright}
         </p>
-        <p className="font-inter text-xs text-blue-300/60">
+        {/* text-blue-300/85 (was /60) for WCAG AA contrast on dark navy footer.
+            Lighthouse a11y audit flagged this at /60. */}
+        <p className="font-inter text-xs text-blue-300/85">
           Built with care.
         </p>
       </div>
