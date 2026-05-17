@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
 import { remark } from "remark";
+import remarkGfm from "remark-gfm";
 import remarkHtml from "remark-html";
 
 // ---------------------------------------------------------------------------
@@ -98,7 +99,11 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
 
   const { data, content: rawBody } = readPostFile(`${slug}.md`);
 
+  // remark-gfm adds GitHub Flavored Markdown support: tables, task lists,
+  // strikethrough, autolinks. Without it, table syntax (| header | header |)
+  // renders as literal piped text. Must come before remark-html in the chain.
   const processed = await remark()
+    .use(remarkGfm)
     .use(remarkHtml, { sanitize: false })
     .process(rawBody);
 
