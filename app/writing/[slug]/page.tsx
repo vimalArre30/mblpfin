@@ -216,12 +216,18 @@ export default async function PostPage({ params }: PageProps) {
           </header>
 
           {/* ── Cover image ── */}
+          {/* `sizes` is critical here: with `fill` and no sizes attr Next.js
+              defaults to generating a 3840px wide WebP, which (a) hits Vercel's
+              image-optimization quota fast and (b) can time out → broken-image
+              icon. Article body width is capped at 720px in the parent
+              container; mobile takes full viewport width. */}
           {post.coverImage && (
             <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden mb-10">
               <Image
                 src={post.coverImage}
                 alt={post.title}
                 fill
+                sizes="(max-width: 768px) 100vw, 720px"
                 className="object-cover"
                 priority
               />
