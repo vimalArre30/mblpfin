@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import Navbar from "@/components/sections/Navbar";
-import Footer from "@/components/sections/Footer";
 import BlogListing from "@/components/sections/BlogListing";
 import { getAllPosts, getAllCategories } from "@/lib/blog";
 import { BRAND } from "@/lib/constants";
+
+// Navbar + Footer are rendered globally by app/layout.tsx.
 
 // ---------------------------------------------------------------------------
 // SEO Metadata
@@ -54,12 +54,8 @@ export default function WritingPage() {
   const categories = getAllCategories();
 
   return (
-    <>
-      <Navbar />
-      <main>
-        <BlogListing posts={posts} categories={categories} />
-      </main>
-      <Footer />
-    </>
+    <main>
+      <BlogListing posts={posts} categories={categories} />
+    </main>
   );
 }

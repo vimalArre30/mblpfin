@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Navbar from "@/components/sections/Navbar";
 import Hero from "@/components/sections/Hero";
 import NarrativeArc from "@/components/sections/NarrativeArc";
 import ThreePillars from "@/components/sections/ThreePillars";
@@ -9,12 +8,12 @@ import Thinking from "@/components/sections/Thinking";
 import YouTubeSeries from "@/components/sections/YouTubeSeries";
 import Collaborate from "@/components/sections/Collaborate";
 import CommunityWaitlist from "@/components/sections/CommunityWaitlist";
-import Footer from "@/components/sections/Footer";
 
+// Navbar + Footer are rendered globally by app/layout.tsx. Don't re-render
+// them here or any other page — that would produce a double shell.
 export default function Home() {
   return (
     <>
-      <Navbar />
       <main>
         <Hero />
         <NarrativeArc />
@@ -26,7 +25,6 @@ export default function Home() {
         <Collaborate />
         <CommunityWaitlist />
       </main>
-      <Footer />
 
       {/* Tracker CTA — floating pill, fixed bottom-right */}
       <Link

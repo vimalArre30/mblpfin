@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import Navbar from "@/components/sections/Navbar";
-import Footer from "@/components/sections/Footer";
 import { getAllPosts, getPostBySlug } from "@/lib/blog";
 import type { PostMeta } from "@/lib/blog";
 import { BRAND } from "@/lib/constants";
@@ -12,6 +10,8 @@ import {
   breadcrumbSchema,
   schemaToJson,
 } from "@/lib/seo/schema";
+
+// Navbar + Footer are rendered globally by app/layout.tsx.
 
 // ---------------------------------------------------------------------------
 // Types
@@ -161,8 +161,6 @@ export default async function PostPage({ params }: PageProps) {
 
   return (
     <>
-      <Navbar />
-
       {/* JSON-LD — placed in body; Google crawls it from anywhere in the HTML */}
       <script
         type="application/ld+json"
@@ -279,8 +277,6 @@ export default async function PostPage({ params }: PageProps) {
 
         </div>
       </main>
-
-      <Footer />
     </>
   );
 }

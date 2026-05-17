@@ -8,6 +8,10 @@ import {
   personSchema,
   schemaToJson,
 } from "@/lib/seo/schema";
+import { createClient } from "@/lib/supabase/server";
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import Navbar from "@/components/sections/Navbar";
+import SiteFooter from "@/components/SiteFooter";
 
 // Google Analytics 4 measurement ID — set NEXT_PUBLIC_GA_ID in Vercel + .env.local.
 // Falsy means GA is disabled (e.g. local dev without the env var set).
@@ -69,11 +73,22 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Read the Supabase session server-side from cookies. We pass the resulting
+  // user (or null) into AuthProvider as initialUser, so the Navbar and any
+  // other client component can call useUser() and get the correct identity
+  // on the very first paint — no client-side flicker between "anonymous" and
+  // "signed in". The provider then subscribes to onAuthStateChange to stay
+  // in sync with future sign-ins / sign-outs / token refreshes.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
     <html lang="en" className={`${playfair.variable} ${inter.variable}`}>
       <head>
@@ -121,7 +136,18 @@ export default function RootLayout({
             </Script>
           </>
         )}
-        {children}
+
+        {/* Global app shell:
+            - AuthProvider exposes useUser() to every client component below.
+            - Navbar is sticky and present on every route (marketing + tracker).
+            - SiteFooter renders the marketing Footer on content pages and
+              hides itself inside /tracker/* (logged-in product chrome).
+            Individual pages should no longer render their own Navbar/Footer. */}
+        <AuthProvider initialUser={user}>
+          <Navbar />
+          {children}
+          <SiteFooter />
+        </AuthProvider>
       </body>
     </html>
   );

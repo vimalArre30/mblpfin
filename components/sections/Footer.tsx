@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SmartLink from "@/components/SmartLink";
 import { BRAND, FOOTER } from "@/lib/constants";
 
 export default function Footer() {
@@ -22,14 +23,14 @@ export default function Footer() {
           <ul className="flex flex-col gap-3">
             {FOOTER.links.map((link) => (
               <li key={link.label}>
-                <Link
+                <SmartLink
                   href={link.href}
                   target={link.href.startsWith("http") ? "_blank" : undefined}
                   rel={link.href.startsWith("http") ? "noopener noreferrer" : undefined}
                   className="font-inter text-sm text-blue-100 hover:text-white transition-colors"
                 >
                   {link.label}
-                </Link>
+                </SmartLink>
               </li>
             ))}
           </ul>
