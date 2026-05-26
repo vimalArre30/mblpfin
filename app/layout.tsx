@@ -132,6 +132,7 @@ export default async function RootLayout({
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
                 gtag('config', '${GA_ID}', { anonymize_ip: true });
+                gtag('config', 'AW-18168938718');
               `}
             </Script>
           </>
