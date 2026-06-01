@@ -5,4 +5,4 @@ Disallow: /api/
 Disallow: /tracker
 Disallow: /tracker/
 
-Sitemap: https://www.mrbottomline.club/sitemap.xml
+Sitemap: https://www.mrbottomline.club/sitemap/sitemap.xml

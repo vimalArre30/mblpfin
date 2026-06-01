@@ -3,38 +3,35 @@ import { getAllPosts } from "@/lib/blog";
 import { BRAND } from "@/lib/constants";
 
 /**
- * Generates the XML sitemap for the site.
- * Next.js serves this automatically at /sitemap.xml.
+ * Sitemap served at /sitemap/sitemap.xml
+ *
+ * WHY NESTED ROUTE (not app/sitemap.ts at /sitemap.xml):
+ * Next.js metadata routes at the app root inject RSC `vary` headers
+ * (rsc, next-router-state-tree, next-router-prefetch) even with
+ * `force-static`. Googlebot's sitemap fetcher doesn't send those RSC
+ * request headers, so the vary causes GSC to report "Couldn't fetch"
+ * even though the URL is publicly reachable. Nesting the file under
+ * app/sitemap/ serves it at a fresh URL that bypasses the RSC header
+ * injection and busts GSC's cached failure for the old /sitemap.xml URL.
+ *
+ * Reference: https://github.com/vercel/next.js/issues/75836
  *
  * Includes:
  * - Homepage
- * - /pro (MBL PFin Pro subscription page — conversion target)
+ * - /pro (conversion target)
  * - /writing index + all published blog posts (/writing/[slug])
- * - /privacy and /delete-account (low priority but should be indexed)
+ * - /privacy and /delete-account
  *
- * Private app routes (/tracker/*) are intentionally excluded — blocked
- * via public/robots.txt + per-layout robots:{index:false}.
- *
- * IMPORTANT: This route is forced static so the sitemap is generated ONCE
- * at build time and served as a stable file. Earlier dynamic generation
- * caused Next.js to inject RSC `vary` headers (rsc, next-router-*)
- * which confused Google's sitemap fetcher and produced a persistent
- * "Couldn't fetch" status in Google Search Console even though the URL
- * was publicly reachable. Static generation removes those headers.
+ * Private app routes (/tracker/*) are excluded — blocked via
+ * public/robots.txt + per-layout robots:{index:false}.
  *
  * Cache-Control is overridden via next.config.ts headers() to set
- * s-maxage=86400 so Vercel's CDN serves it from edge on cache HIT,
- * preventing cold-start timeouts when Googlebot fetches the sitemap.
- *
- * To force a regenerate without changing content, push an empty commit
- * or bump any of the stable `lastModified` constants below.
+ * s-maxage=86400 so Vercel's CDN serves it from edge on cache HIT.
  */
 export const dynamic = "force-static";
 
-// Stable last-modified dates per URL — only bump these when the page's
-// actual content meaningfully changes. NEVER use `new Date()` here:
-// it makes Next.js treat the route as dynamic and re-adds the RSC `vary`
-// headers that confuse Google's sitemap parser.
+// Stable last-modified dates — only bump when page content meaningfully
+// changes. NEVER use `new Date()` here: dynamic dates re-add RSC headers.
 const HOMEPAGE_LAST_MODIFIED = new Date("2026-05-02");
 const PRO_LAST_MODIFIED      = new Date("2026-05-15");
 const PRIVACY_LAST_MODIFIED  = new Date("2026-05-02");
