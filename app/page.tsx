@@ -1,28 +1,29 @@
 import Link from "next/link";
-import Hero from "@/components/sections/Hero";
-import NarrativeArc from "@/components/sections/NarrativeArc";
-import ThreePillars from "@/components/sections/ThreePillars";
+import BrandHero from "@/components/sections/BrandHero";
+import ThreeArms from "@/components/sections/ThreeArms";
+import ToolsWidget from "@/components/sections/ToolsWidget";
+import CareerStory from "@/components/sections/CareerStory";
 import YouTubeFeature from "@/components/sections/YouTubeFeature";
 import Philosophy from "@/components/sections/Philosophy";
 import Thinking from "@/components/sections/Thinking";
 import YouTubeSeries from "@/components/sections/YouTubeSeries";
-import ToolsWidget from "@/components/sections/ToolsWidget";
 import Collaborate from "@/components/sections/Collaborate";
 import CommunityWaitlist from "@/components/sections/CommunityWaitlist";
 
-// Navbar + Footer are rendered globally by app/layout.tsx. Don't re-render
-// them here or any other page — that would produce a double shell.
+// Navbar + Footer are rendered globally by app/layout.tsx.
+// Old sections retired: Hero, NarrativeArc, ThreePillars
+// New sections: BrandHero (platform-first), ThreeArms, ToolsWidget (moved up), CareerStory
 export default function Home() {
   return (
     <>
       <main>
-        <Hero />
-        <NarrativeArc />
-        <ThreePillars />
+        <BrandHero />
+        <ThreeArms />
+        <ToolsWidget />
+        <CareerStory />
+        <Thinking />
         <YouTubeFeature />
         <Philosophy />
-        <Thinking />
-        <ToolsWidget />
         <YouTubeSeries />
         <Collaborate />
         <CommunityWaitlist />

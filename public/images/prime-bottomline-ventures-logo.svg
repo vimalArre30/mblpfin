@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 160" fill="none">
+  <!-- PRIME in amber -->
+  <text x="0" y="72" font-family="Arial, sans-serif" font-weight="700" font-size="52" fill="#C8941A" letter-spacing="2">PRIME</text>
+  <!-- BOTTOMLINE in dark green -->
+  <text x="165" y="72" font-family="Arial, sans-serif" font-weight="700" font-size="52" fill="#1A5C2A" letter-spacing="1">BOTTOMLINE</text>
+  <!-- Line with zigzag (amber) transitioning to arrow (green) -->
+  <polyline points="0,95 28,95 38,80 48,110 58,95 140,95" stroke="#C8941A" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <line x1="140" y1="95" x2="490" y2="95" stroke="#1A5C2A" stroke-width="3.5" stroke-linecap="round"/>
+  <polygon points="490,88 520,95 490,102" fill="#1A5C2A"/>
+  <!-- VENTURES in dark green -->
+  <text x="280" y="138" font-family="Arial, sans-serif" font-weight="700" font-size="32" fill="#1A5C2A" letter-spacing="3">VENTURES</text>
+</svg>
