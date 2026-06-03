@@ -32,10 +32,11 @@ export const dynamic = "force-static";
 
 // Stable last-modified dates — only bump when page content meaningfully
 // changes. NEVER use `new Date()` here: dynamic dates re-add RSC headers.
-const HOMEPAGE_LAST_MODIFIED = new Date("2026-05-02");
-const PRO_LAST_MODIFIED      = new Date("2026-05-15");
-const PRIVACY_LAST_MODIFIED  = new Date("2026-05-02");
-const DELETE_LAST_MODIFIED   = new Date("2026-05-10");
+const HOMEPAGE_LAST_MODIFIED      = new Date("2026-05-02");
+const PRO_LAST_MODIFIED           = new Date("2026-05-15");
+const PRIVACY_LAST_MODIFIED       = new Date("2026-05-02");
+const DELETE_LAST_MODIFIED        = new Date("2026-05-10");
+const FIRE_CALCULATOR_LAST_MODIFIED = new Date("2026-06-01");
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const posts = getAllPosts();
@@ -71,6 +72,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.6,
     },
     ...postEntries,
+    {
+      url: `${BRAND.url}/tools/fire-calculator`,
+      lastModified: FIRE_CALCULATOR_LAST_MODIFIED,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
     {
       url: `${BRAND.url}/privacy`,
       lastModified: PRIVACY_LAST_MODIFIED,
