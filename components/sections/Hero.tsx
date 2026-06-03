@@ -67,7 +67,7 @@ export default function Hero() {
                 Capital into high-agency founders. Revenue-First. Region-First.
               </p>
               <Link
-                href="https://www.bottomlineventures.vc"
+                href="https://www.primebottomline.vc"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-inter text-xs font-semibold uppercase tracking-[0.12em] text-navy hover:text-navy-dark transition-colors"

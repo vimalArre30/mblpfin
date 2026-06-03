@@ -83,7 +83,7 @@ export default function ThreePillars() {
                 Bottomline Ventures is a ₹20 Crore revenue-stage fund backing Tier 2 India founders — operators in cities like Coimbatore, Surat, Indore, and Vizag who have paying customers and zero institutional attention. Revenue-First. Region-First. Disciplined by Design.
               </p>
               <Link
-                href="https://www.bottomlineventures.vc"
+                href="https://www.primebottomline.vc"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-amber-400 text-ink font-inter font-bold text-sm hover:bg-amber-300 transition-colors shadow-lg"

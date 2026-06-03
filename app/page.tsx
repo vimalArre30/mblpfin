@@ -6,6 +6,7 @@ import YouTubeFeature from "@/components/sections/YouTubeFeature";
 import Philosophy from "@/components/sections/Philosophy";
 import Thinking from "@/components/sections/Thinking";
 import YouTubeSeries from "@/components/sections/YouTubeSeries";
+import ToolsWidget from "@/components/sections/ToolsWidget";
 import Collaborate from "@/components/sections/Collaborate";
 import CommunityWaitlist from "@/components/sections/CommunityWaitlist";
 
@@ -21,6 +22,7 @@ export default function Home() {
         <YouTubeFeature />
         <Philosophy />
         <Thinking />
+        <ToolsWidget />
         <YouTubeSeries />
         <Collaborate />
         <CommunityWaitlist />
