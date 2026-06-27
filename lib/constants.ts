@@ -5,11 +5,11 @@
 
 // --------------- BRAND ---------------
 export const BRAND = {
-  name: "Mr. Bottom Line",
-  tagline: "Product Builder. Systems Thinker. Capital Allocator.",
+  name: "MBL PFin",
+  tagline: "Track every rupee. By voice.",
   description:
-    "Vimal is a product builder turned capital allocator. Chief of Product at ARRÊ Voice. Building Serene Windsor, Mr. Bottom Line on YouTube, and backing high-agency founders.",
-  url: "https://www.mrbottomline.club",
+    "MBL PFin is a voice AI expense tracker built for high-agency, financially prudent individuals. Log expenses by speaking, get AI-powered insights, and join a community co-building the future of personal finance.",
+  url: "https://mblpfin.com",
 };
 
 // --------------- LINKS ---------------
@@ -20,17 +20,50 @@ export const LINKS = {
   sereneWindsor: "https://sserenewindsor.com",
   contactEmail: "hello@mrbottomline.club",
   linkedin: "https://www.linkedin.com/in/rvimalkumar/",
+  mrbottomlineClub: "https://www.mrbottomline.club",
+  playStore: "https://play.google.com/store/apps/details?id=club.mblpfin",
 };
+
+// --------------- MBL PFin YouTube Videos ---------------
+export const YOUTUBE_VIDEOS = [
+  {
+    id: "Wm2g76bZekU",
+    title: "The Month Ends. The Money Is Gone.",
+    label: "THE MONTH ENDS.\nTHE MONEY IS GONE.",
+    accentColor: "#EF4444",
+    bgGradient: "from-[#8B1010] to-[#1a0505]",
+    href: "https://www.youtube.com/watch?v=Wm2g76bZekU",
+  },
+  {
+    id: "BlZTbtDxwD8",
+    title: "₹0 at 29. 5,000 km later.",
+    label: "EP 1 · BUILD IN PUBLIC\n₹0 AT 29. 5,000 KM LATER.",
+    accentColor: "#F97316",
+    bgGradient: "from-[#1a3a20] to-[#0a1a10]",
+    href: "https://www.youtube.com/watch?v=BlZTbtDxwD8",
+  },
+  {
+    id: "m5dNFO1SVCE",
+    title: "The Ultimate Survival Strategy in an AI Driven World",
+    label: "THE ULTIMATE\nSURVIVAL STRATEGY\nIN AN AI DRIVEN WORLD",
+    accentColor: "#EF4444",
+    bgGradient: "from-[#18183a] to-[#0a0a18]",
+    href: "https://www.youtube.com/watch?v=m5dNFO1SVCE",
+  },
+  {
+    id: "lYpNaUN1qG4",
+    title: "₹2 CR → ₹10 CR — The ₹8 Crore Gap",
+    label: "₹2 CR → ₹10 CR\nTHE ₹8 CRORE GAP",
+    accentColor: "#EAB308",
+    bgGradient: "from-[#2a2810] to-[#0f0f05]",
+    href: "https://www.youtube.com/watch?v=lYpNaUN1qG4",
+  },
+];
 
 // --------------- NAV ---------------
 export const NAV_LINKS = [
-  { label: "About", href: "#about" },
-  { label: "Pursuits", href: "#pursuits" },
-  { label: "Thinking", href: "#thinking" },
-  { label: "Writing", href: "/writing" },
-  { label: "Collaborate", href: "#collaborate" },
-  { label: "Community", href: "#community" },
-  { label: "Tracker", href: "/tracker" },
+  { label: "Blog", href: "/blog" },
+  { label: "Pricing", href: "/pro" },
 ];
 
 // --------------- HERO ---------------

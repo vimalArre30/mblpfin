@@ -1,41 +1,33 @@
-import Link from "next/link";
-import BrandHero from "@/components/sections/BrandHero";
-import ThreeArms from "@/components/sections/ThreeArms";
-import ToolsWidget from "@/components/sections/ToolsWidget";
-import CareerStory from "@/components/sections/CareerStory";
-import YouTubeFeature from "@/components/sections/YouTubeFeature";
-import Philosophy from "@/components/sections/Philosophy";
-import Thinking from "@/components/sections/Thinking";
-import YouTubeSeries from "@/components/sections/YouTubeSeries";
-import Collaborate from "@/components/sections/Collaborate";
-import CommunityWaitlist from "@/components/sections/CommunityWaitlist";
+import Hero from "@/components/home/Hero";
+import HowItWorks from "@/components/home/HowItWorks";
+import WhyMBLPFin from "@/components/home/WhyMBLPFin";
+import Features from "@/components/home/Features";
+import Founder from "@/components/home/Founder";
+import Community from "@/components/home/Community";
+import CoBuild from "@/components/home/CoBuild";
+import ComingSoon from "@/components/home/ComingSoon";
+import AndroidDownload from "@/components/home/AndroidDownload";
+import PricingPreview from "@/components/home/PricingPreview";
+import BlogPreview from "@/components/home/BlogPreview";
+import FAQ from "@/components/home/FAQ";
+import HomePhilosophy from "@/components/home/HomePhilosophy";
 
-// Navbar + Footer are rendered globally by app/layout.tsx.
-// Old sections retired: Hero, NarrativeArc, ThreePillars
-// New sections: BrandHero (platform-first), ThreeArms, ToolsWidget (moved up), CareerStory
-export default function Home() {
+export default function HomePage() {
   return (
-    <>
-      <main>
-        <BrandHero />
-        <ThreeArms />
-        <ToolsWidget />
-        <CareerStory />
-        <Thinking />
-        <YouTubeFeature />
-        <Philosophy />
-        <YouTubeSeries />
-        <Collaborate />
-        <CommunityWaitlist />
-      </main>
-
-      {/* Tracker CTA — floating pill, fixed bottom-right */}
-      <Link
-        href="/tracker"
-        className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 bg-amber-400 text-navy-dark font-bold text-sm px-5 py-3 rounded-full shadow-xl hover:bg-amber-300 active:scale-95 transition-all duration-150"
-      >
-        Track My Expenses →
-      </Link>
-    </>
+    <main>
+      <Hero />
+      <HowItWorks />
+      <WhyMBLPFin />
+      <Features />
+      <Founder />
+      <Community />
+      <CoBuild />
+      <ComingSoon />
+      <AndroidDownload />
+      <PricingPreview />
+      <BlogPreview />
+      <FAQ />
+      <HomePhilosophy />
+    </main>
   );
 }

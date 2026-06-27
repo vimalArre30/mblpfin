@@ -129,15 +129,15 @@ export default function LoginPage() {
       {/* Brand */}
       <div className="mb-10 text-center">
         <p className="font-playfair text-2xl font-semibold text-white tracking-tight">
-          Mr. Bottom Line
+          MBL PFin
         </p>
-        <p className="mt-1 text-white/40 text-sm">Expenditure Tracker</p>
+        <p className="mt-1 text-white/40 text-sm">Track Every Rupee. By Voice.</p>
       </div>
 
       {/* Card */}
       <div className="w-full max-w-sm bg-white/5 border border-white/10 rounded-2xl px-8 py-10 backdrop-blur-sm">
         <h1 className="font-playfair text-xl font-semibold text-white mb-1">
-          {otpStep === "phone" ? "Sign in to MrBottomLine" : "Enter your OTP"}
+          {otpStep === "phone" ? "Sign in to MBL PFin" : "Enter your OTP"}
         </h1>
         <p className="text-white/40 text-sm mb-8">
           {otpStep === "phone"

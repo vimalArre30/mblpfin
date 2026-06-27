@@ -29,7 +29,7 @@ export default async function TrackerLayout({
         <header className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="font-playfair text-lg font-semibold text-white tracking-tight">
-              Mr. Bottom Line
+              MBL PFin
             </span>
             <span className="text-white/25 text-sm">/</span>
             <span className="text-white/60 text-sm">Tracker</span>

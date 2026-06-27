@@ -31,9 +31,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Mr. Bottom Line — Product Builder. Systems Thinker. Capital Allocator.",
+  title: "MBL PFin — Track Every Rupee. By Voice.",
   description:
-    "Vimal is a product builder turned capital allocator. Chief of Product at ARRÊ Voice. Building Serene Windsor, Mr. Bottom Line on YouTube, and backing high-agency founders.",
+    "MBL PFin is a voice AI expense tracker for high-agency, financially prudent individuals. Say it out loud — AI logs it instantly. Free plan available. Android app.",
   metadataBase: new URL(BRAND.url),
   alternates: {
     canonical: BRAND.url,
@@ -45,27 +45,27 @@ export const metadata: Metadata = {
     icon: { url: "/favicon.svg", type: "image/svg+xml" },
   },
   openGraph: {
-    title: "Mr. Bottom Line — Product Builder. Systems Thinker. Capital Allocator.",
+    title: "MBL PFin — Track Every Rupee. By Voice.",
     description:
-      "Vimal is a product builder turned capital allocator. Chief of Product at ARRÊ Voice. Building Serene Windsor, Mr. Bottom Line on YouTube, and backing high-agency founders.",
+      "Voice AI expense tracker. Say it out loud, AI logs it. Free plan · Android app · Built for high-agency individuals.",
     url: BRAND.url,
     siteName: BRAND.name,
     type: "website",
     images: [
       {
-        url: "https://www.mrbottomline.club/images/og-image.jpg",
+        url: `${BRAND.url}/images/og-image.jpg`,
         width: 1200,
         height: 630,
-        alt: "Mr. Bottom Line",
+        alt: "MBL PFin — Track Every Rupee. By Voice.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Mr. Bottom Line — Product Builder. Systems Thinker. Capital Allocator.",
+    title: "MBL PFin — Track Every Rupee. By Voice.",
     description:
-      "Vimal is a product builder turned capital allocator. Chief of Product at ARRÊ Voice. Building Serene Windsor, Mr. Bottom Line on YouTube, and backing high-agency founders.",
-    images: ["https://www.mrbottomline.club/images/og-image.jpg"],
+      "Voice AI expense tracker. Say it out loud, AI logs it. Free plan · Android app · Built for high-agency individuals.",
+    images: [`${BRAND.url}/images/og-image.jpg`],
   },
   robots: {
     index: true,

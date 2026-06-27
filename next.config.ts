@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: [],
+    domains: ["img.youtube.com"],
   },
   experimental: {
     staleTimes: {
@@ -33,6 +33,17 @@ const nextConfig: NextConfig = {
       {
         source: "/pricing",
         destination: "/pro",
+        permanent: true,
+      },
+      // /blog → /writing (canonical blog route)
+      {
+        source: "/blog",
+        destination: "/writing",
+        permanent: true,
+      },
+      {
+        source: "/blog/:slug",
+        destination: "/writing/:slug",
         permanent: true,
       },
     ];
