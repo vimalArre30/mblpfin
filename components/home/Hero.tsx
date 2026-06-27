@@ -8,14 +8,14 @@ export default function Hero() {
 
         {/* Left: copy + CTAs */}
         <div className="py-16 lg:py-20 lg:pr-12">
-          <div className="inline-block bg-white/[0.06] border border-white/10 rounded-full px-3 py-1 text-xs text-white/45 mb-6 tracking-wide">
+          <div className="inline-block bg-white/[0.06] border border-white/10 rounded-full px-3 py-1 text-xs text-white/65 mb-6 tracking-wide">
             Voice AI · Expense Tracker · Android
           </div>
           <h1 className="font-playfair text-4xl lg:text-5xl font-bold text-white leading-[1.1] tracking-tight mb-5">
             Track every rupee.<br />
             <em>By voice.</em>
           </h1>
-          <p className="font-inter text-[15px] text-white/45 leading-relaxed mb-8 max-w-sm">
+          <p className="font-inter text-[15px] text-white/65 leading-relaxed mb-8 max-w-sm">
             Say it out loud. MBL PFin logs it — amount, category, wallet.
             No forms. No tapping. The foundation of your financial intelligence.
           </p>
@@ -35,7 +35,7 @@ export default function Hero() {
               Download on Android
             </a>
           </div>
-          <p className="font-inter text-xs text-white/20 mt-4">
+          <p className="font-inter text-xs text-white/35 mt-4">
             Free plan · 250 entries/month · No card needed
           </p>
         </div>

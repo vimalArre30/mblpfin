@@ -6,13 +6,13 @@ export default function AndroidDownload() {
       <div className="max-w-content mx-auto px-6 lg:px-8 py-16 lg:py-20">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8">
           <div>
-            <p className="font-inter text-xs text-white/30 tracking-[0.15em] uppercase mb-3">
+            <p className="font-inter text-xs text-white/45 tracking-[0.15em] uppercase mb-3">
               Android app
             </p>
             <h2 className="font-playfair text-2xl lg:text-3xl font-bold text-white mb-3">
               Log from anywhere, anytime.
             </h2>
-            <p className="font-inter text-sm text-white/40 max-w-md">
+            <p className="font-inter text-sm text-white/65 max-w-md">
               The MBL PFin Android app is live on the Play Store.
               Free to download. Voice logging works offline too.
             </p>

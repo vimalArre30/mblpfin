@@ -20,7 +20,7 @@ export default function WhyMBLPFin() {
   return (
     <section className="bg-[#0A1628] border-b border-white/[0.07]">
       <div className="max-w-content mx-auto px-6 lg:px-8 py-16 lg:py-20">
-        <p className="font-inter text-xs text-white/30 tracking-[0.15em] uppercase mb-3">
+        <p className="font-inter text-xs text-white/45 tracking-[0.15em] uppercase mb-3">
           Why MBL PFin
         </p>
         <h2 className="font-playfair text-2xl lg:text-3xl font-bold text-white mb-10">
@@ -33,13 +33,13 @@ export default function WhyMBLPFin() {
               key={r.title}
               className="border border-white/[0.08] rounded-xl p-6 flex flex-col gap-3"
             >
-              <span className="inline-block self-start font-inter text-[10px] text-white/30 bg-white/[0.06] border border-white/[0.08] px-2.5 py-1 rounded-full tracking-wide uppercase">
+              <span className="inline-block self-start font-inter text-[10px] text-white/45 bg-white/[0.06] border border-white/[0.08] px-2.5 py-1 rounded-full tracking-wide uppercase">
                 {r.tag}
               </span>
               <h3 className="font-playfair text-lg font-semibold text-white leading-snug">
                 {r.title}
               </h3>
-              <p className="font-inter text-sm text-white/40 leading-relaxed">
+              <p className="font-inter text-sm text-white/65 leading-relaxed">
                 {r.body}
               </p>
             </div>

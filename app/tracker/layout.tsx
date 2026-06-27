@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import SignOutButton from "@/app/tracker/dashboard/SignOutButton";
-import TrackerNav from "@/components/tracker/TrackerNav";
 
 // Private app routes — keep out of search indexes (belt + braces with robots.txt).
 export const metadata: Metadata = {
@@ -26,27 +23,6 @@ export default async function TrackerLayout({
 
   return (
     <div className="min-h-screen bg-navy-dark font-inter overflow-x-hidden">
-      <div className="sticky top-0 z-50 bg-[#0F1E40]">
-        <header className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="font-playfair text-lg font-semibold text-white tracking-tight hover:text-white/75 transition-colors"
-            >
-              MBL PFin
-            </Link>
-            <span className="text-white/25 text-sm">/</span>
-            <span className="text-white/60 text-sm">Tracker</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-xs text-white/35 hidden sm:block">
-              {user.email ?? user.phone ?? "Your account"}
-            </span>
-            <SignOutButton />
-          </div>
-        </header>
-        <TrackerNav />
-      </div>
       {children}
     </div>
   );

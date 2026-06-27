@@ -5,7 +5,7 @@ export default function Founder() {
   return (
     <section className="bg-[#0A1628] border-b border-white/[0.07]">
       <div className="max-w-content mx-auto px-6 lg:px-8 py-16 lg:py-20">
-        <p className="font-inter text-xs text-white/30 tracking-[0.15em] uppercase mb-10">
+        <p className="font-inter text-xs text-white/45 tracking-[0.15em] uppercase mb-10">
           The Founder
         </p>
 
@@ -20,10 +20,10 @@ export default function Founder() {
             <h2 className="font-playfair text-xl font-bold text-white mb-1">
               Vimal — MrBottomLine
             </h2>
-            <p className="font-inter text-sm text-white/40 mb-4">
+            <p className="font-inter text-sm text-white/65 mb-4">
               Product builder · Runner · Capital allocator
             </p>
-            <p className="font-inter text-sm text-white/50 leading-relaxed max-w-2xl">
+            <p className="font-inter text-sm text-white/70 leading-relaxed max-w-2xl">
               I built MBL PFin because I couldn't find a tracker that fit how I actually live —
               on the move, thinking out loud, managing multiple wallets. So I built one.
               The same obsession with bottom-line thinking that drives my YouTube channel
@@ -33,7 +33,7 @@ export default function Founder() {
               href={LINKS.mrbottomlineClub}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-inter text-xs text-white/30 hover:text-white/60 transition-colors mt-3 inline-block"
+              className="font-inter text-xs text-white/45 hover:text-white/60 transition-colors mt-3 inline-block"
             >
               mrbottomline.club ↗
             </a>
@@ -41,7 +41,7 @@ export default function Founder() {
         </div>
 
         {/* YouTube grid */}
-        <p className="font-inter text-xs text-white/25 tracking-[0.12em] uppercase mb-5">
+        <p className="font-inter text-xs text-white/40 tracking-[0.12em] uppercase mb-5">
           On YouTube
         </p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

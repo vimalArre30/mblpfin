@@ -25,9 +25,9 @@ export default function FAQ() {
   const [open, setOpen] = useState<number | null>(null);
 
   return (
-    <section className="bg-[#0D1B38] border-b border-white/[0.07]">
+    <section className="bg-[#112244] border-b border-white/[0.07]">
       <div className="max-w-content mx-auto px-6 lg:px-8 py-16 lg:py-20">
-        <p className="font-inter text-xs text-white/30 tracking-[0.15em] uppercase mb-3">
+        <p className="font-inter text-xs text-white/45 tracking-[0.15em] uppercase mb-3">
           FAQ
         </p>
         <h2 className="font-playfair text-2xl lg:text-3xl font-bold text-white mb-10">
@@ -47,13 +47,13 @@ export default function FAQ() {
                 <span className="font-inter text-sm font-medium text-white/70">
                   {faq.q}
                 </span>
-                <span className="flex-shrink-0 text-white/30 text-lg leading-none">
+                <span className="flex-shrink-0 text-white/45 text-lg leading-none">
                   {open === i ? "−" : "+"}
                 </span>
               </button>
               {open === i && (
                 <div className="px-5 pb-5 border-t border-white/[0.06]">
-                  <p className="font-inter text-sm text-white/40 leading-relaxed pt-4">
+                  <p className="font-inter text-sm text-white/65 leading-relaxed pt-4">
                     {faq.a}
                   </p>
                 </div>

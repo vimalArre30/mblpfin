@@ -32,11 +32,11 @@ const plans = [
 
 export default function PricingPreview() {
   return (
-    <section className="bg-[#0D1B38] border-b border-white/[0.07]">
+    <section className="bg-[#112244] border-b border-white/[0.07]">
       <div className="max-w-content mx-auto px-6 lg:px-8 py-16 lg:py-20">
         <div className="flex items-end justify-between mb-10">
           <div>
-            <p className="font-inter text-xs text-white/30 tracking-[0.15em] uppercase mb-3">
+            <p className="font-inter text-xs text-white/45 tracking-[0.15em] uppercase mb-3">
               Pricing
             </p>
             <h2 className="font-playfair text-2xl lg:text-3xl font-bold text-white">
@@ -45,7 +45,7 @@ export default function PricingPreview() {
           </div>
           <Link
             href="/pro"
-            className="hidden sm:block font-inter text-sm text-white/40 hover:text-white transition-colors"
+            className="hidden sm:block font-inter text-sm text-white/65 hover:text-white transition-colors"
           >
             See full pricing →
           </Link>
@@ -62,18 +62,18 @@ export default function PricingPreview() {
               }`}
             >
               <div>
-                <p className="font-inter text-xs text-white/35 mb-2 tracking-wide">{plan.name}</p>
+                <p className="font-inter text-xs text-white/50 mb-2 tracking-wide">{plan.name}</p>
                 <div className="flex items-baseline gap-1">
                   <span className="font-playfair text-3xl font-bold text-white">{plan.price}</span>
-                  <span className="font-inter text-xs text-white/35">{plan.period}</span>
+                  <span className="font-inter text-xs text-white/50">{plan.period}</span>
                 </div>
               </div>
 
               <ul className="flex flex-col gap-2">
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-center gap-2">
-                    <span className="text-white/30 text-xs">✓</span>
-                    <span className="font-inter text-xs text-white/45">{f}</span>
+                    <span className="text-white/45 text-xs">✓</span>
+                    <span className="font-inter text-xs text-white/65">{f}</span>
                   </li>
                 ))}
               </ul>
@@ -94,7 +94,7 @@ export default function PricingPreview() {
 
         <Link
           href="/pro"
-          className="sm:hidden mt-6 block font-inter text-sm text-white/40 hover:text-white transition-colors"
+          className="sm:hidden mt-6 block font-inter text-sm text-white/65 hover:text-white transition-colors"
         >
           See full pricing →
         </Link>
