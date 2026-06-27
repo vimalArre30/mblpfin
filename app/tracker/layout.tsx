@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import SignOutButton from "@/app/tracker/dashboard/SignOutButton";
 import TrackerNav from "@/components/tracker/TrackerNav";
@@ -28,9 +29,12 @@ export default async function TrackerLayout({
       <div className="sticky top-0 z-50 bg-[#0F1E40]">
         <header className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="font-playfair text-lg font-semibold text-white tracking-tight">
+            <Link
+              href="/"
+              className="font-playfair text-lg font-semibold text-white tracking-tight hover:text-white/75 transition-colors"
+            >
               MBL PFin
-            </span>
+            </Link>
             <span className="text-white/25 text-sm">/</span>
             <span className="text-white/60 text-sm">Tracker</span>
           </div>
