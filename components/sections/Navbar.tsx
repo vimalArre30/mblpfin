@@ -23,8 +23,9 @@ const TRACKER_NAV = [
 ];
 
 export default function Navbar() {
-  const [menuOpen, setMenuOpen]   = useState(false);
+  const [menuOpen, setMenuOpen]     = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
+  const [profileName, setProfileName] = useState<string | null>(null);
   const pathname = usePathname() ?? "/";
   const router   = useRouter();
   const { user } = useUser();
@@ -34,6 +35,20 @@ export default function Navbar() {
   // so no Dashboard/Transactions/etc links appear and users can't escape.
   const isOnboarding = pathname === "/tracker/onboarding";
   const isTracker = pathname.startsWith("/tracker") && !isOnboarding;
+
+  // Fetch profile name so the avatar shows the user's actual initial
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    supabase
+      .from("user_profiles")
+      .select("name")
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.name) setProfileName(data.name as string);
+      });
+  }, [user?.id]);
 
   // Close avatar dropdown on outside click
   useEffect(() => {
@@ -55,8 +70,10 @@ export default function Navbar() {
     router.refresh();
   };
 
-  // Avatar initial — phone number or email first char
-  const avatarInitial = user
+  // Avatar initial — name from profile, else fallback "U"
+  const avatarInitial = profileName
+    ? profileName.trim().charAt(0).toUpperCase()
+    : user
     ? (user.phone ?? user.email ?? "U").replace(/^\+\d+/, "").charAt(0).toUpperCase() || "U"
     : "U";
 
