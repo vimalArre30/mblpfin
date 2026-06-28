@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUserPlan } from "@/lib/tracker/plan";
 import SettingsClient from "./SettingsClient";
+import ProfileSection from "./ProfileSection";
 
 export const metadata = {
-  title: "Settings — MrBottomLine Tracker",
+  title: "Settings — MBL PFin",
 };
 
 export default async function SettingsPage() {
@@ -15,7 +17,8 @@ export default async function SettingsPage() {
 
   if (!user) redirect("/tracker/login");
 
-  const [{ data: categories }, { data: labels }] = await Promise.all([
+  const [profile, { data: categories }, { data: labels }] = await Promise.all([
+    getUserPlan(supabase, user.id),
     supabase
       .from("categories")
       .select("id, name, icon, type, user_id")
@@ -33,9 +36,14 @@ export default async function SettingsPage() {
           Settings
         </h1>
         <p className="mt-1 text-white/40 text-sm">
-          Manage your categories and labels.
+          Manage your profile, categories, and labels.
         </p>
       </div>
+
+      <ProfileSection
+        initialName={profile?.name ?? ""}
+        initialUsername={profile?.username ?? ""}
+      />
 
       <SettingsClient
         initialCategories={categories ?? []}

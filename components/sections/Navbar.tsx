@@ -30,7 +30,10 @@ export default function Navbar() {
   const { user } = useUser();
   const avatarRef = useRef<HTMLDivElement>(null);
 
-  const isTracker = pathname.startsWith("/tracker");
+  // Onboarding is a walled-garden step — treat it like a non-tracker route
+  // so no Dashboard/Transactions/etc links appear and users can't escape.
+  const isOnboarding = pathname === "/tracker/onboarding";
+  const isTracker = pathname.startsWith("/tracker") && !isOnboarding;
 
   // Close avatar dropdown on outside click
   useEffect(() => {
@@ -139,7 +142,7 @@ export default function Navbar() {
 
         {/* ── Desktop right ── */}
         <div className="hidden lg:flex items-center gap-3 flex-shrink-0">
-          {isTracker && user ? (
+          {isOnboarding ? null : isTracker && user ? (
             /* Avatar dropdown */
             <div ref={avatarRef} className="relative">
               <button
@@ -185,9 +188,9 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile hamburger */}
+        {/* Mobile hamburger — hidden on onboarding (no nav destinations available) */}
         <button
-          className="lg:hidden flex flex-col gap-1.5 p-2 rounded-md hover:bg-white/10 transition-colors ml-auto"
+          className={`lg:hidden flex flex-col gap-1.5 p-2 rounded-md hover:bg-white/10 transition-colors ml-auto ${isOnboarding ? "invisible" : ""}`}
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Toggle menu"
           aria-expanded={menuOpen}
