@@ -43,7 +43,7 @@ export default function TrackerNav() {
               ? "text-amber-300 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-amber-400"
               : "text-amber-400/85 hover:text-amber-300"
           }`}
-          aria-label="Manage your MrBottomLine Pro subscription"
+          aria-label="Manage your MBL PFin Pro subscription"
         >
           <span aria-hidden>★</span> Pro
         </Link>

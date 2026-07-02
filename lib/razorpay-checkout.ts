@@ -94,7 +94,7 @@ export async function startSubscriptionCheckout(opts: {
   const rzp = new window.Razorpay({
     key: key_id,
     subscription_id,
-    name: "MrBottomLine Pro",
+    name: "MBL PFin Pro",
     description: interval === "annual" ? "Annual subscription · ₹899/yr" : "Monthly subscription · ₹199/mo",
     prefill,
     theme: { color: "#F59E0B" },

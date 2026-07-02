@@ -5,7 +5,7 @@ import WalletsClient from "./WalletsClient";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Wallets — MrBottomLine Tracker",
+  title: "Wallets — MBL PFin",
 };
 
 export default async function WalletsPage() {

@@ -10,7 +10,7 @@ import { getUserPlan, isProActive, isOnboarded } from "@/lib/tracker/plan";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Dashboard — MrBottomLine Tracker",
+  title: "Dashboard — MBL PFin",
 };
 
 export default async function DashboardPage() {

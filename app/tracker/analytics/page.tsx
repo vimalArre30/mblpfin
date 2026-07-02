@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import AnalyticsClient from "./AnalyticsClient";
 
 export const metadata = {
-  title: "Analytics — MrBottomLine Tracker",
+  title: "Analytics — MBL PFin",
 };
 
 export default async function AnalyticsPage() {

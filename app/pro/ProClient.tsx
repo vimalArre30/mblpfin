@@ -94,7 +94,7 @@ export default function ProClient({
       {/* Hero */}
       <div className="text-center">
         <h1 className="font-playfair text-3xl sm:text-4xl font-bold text-white mb-3">
-          MrBottomLine Pro
+          MBL PFin Pro
         </h1>
         <p className="text-white/50 text-base sm:text-lg">
           Track without limits. Unlimited entries, full analytics, voice + AI input.

@@ -101,7 +101,16 @@ export default function LoginPage() {
       }
       if (data.user && data.session) {
         await fetch("/api/tracker/seed-user", { method: "POST" });
-        router.push("/tracker/dashboard");
+        // Check onboarding status — send new users directly to onboarding
+        // instead of bouncing through dashboard first.
+        const { data: profile } = await supabase
+          .from("user_profiles")
+          .select("name, username")
+          .eq("user_id", data.user.id)
+          .single();
+        const isOnboarded =
+          !!profile?.name?.trim() && !!profile?.username?.trim();
+        router.push(isOnboarded ? "/tracker/dashboard" : "/tracker/onboarding");
         router.refresh();
       }
     } catch (err: unknown) {

@@ -5,7 +5,7 @@ import TransactionsClient from "./TransactionsClient";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Transactions — MrBottomLine Tracker",
+  title: "Transactions — MBL PFin",
 };
 
 export default async function TransactionsPage() {
