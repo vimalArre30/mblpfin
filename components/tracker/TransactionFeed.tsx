@@ -22,6 +22,7 @@ export interface Transaction {
   is_opening_balance: boolean | null;
   transfer_id: string | null;
   to_wallet_id: string | null;
+  recurring_id: string | null;
   wallet: { name: string; emoji: string; color: string } | null;
   categories: { name: string } | null;
   transaction_labels: { label_id: string; labels: { name: string } | null }[] | null;
@@ -449,6 +450,9 @@ function TxRow({
                 <span className="text-xs bg-blue-500/15 text-blue-300 border border-blue-500/20 rounded-full px-2 py-0.5 shrink-0">
                   Transfer
                 </span>
+              )}
+              {tx.recurring_id && (
+                <span title="Auto-created by recurring rule" className="text-xs text-white/35 shrink-0">🔁</span>
               )}
             </div>
             {tx.wallet && (

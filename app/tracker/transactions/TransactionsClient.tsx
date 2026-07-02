@@ -7,6 +7,7 @@ import AddEntryModal from "@/components/tracker/AddEntryModal";
 import TransactionFeed, { type Transaction } from "@/components/tracker/TransactionFeed";
 import PeriodFilter from "@/components/tracker/PeriodFilter";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
+import RecurringSection from "./RecurringSection";
 
 function SkeletonRow() {
   return (
@@ -20,6 +21,8 @@ function SkeletonRow() {
   );
 }
 
+type Tab = "transactions" | "recurring";
+
 export default function TransactionsClient({
   initialTransactions,
   wallets,
@@ -29,6 +32,7 @@ export default function TransactionsClient({
 }) {
   const router = useRouter();
   const supabase = useRef(createClient()).current;
+  const [activeTab, setActiveTab] = useState<Tab>("transactions");
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState(false);
 
@@ -43,7 +47,7 @@ export default function TransactionsClient({
       const { data } = await supabase
         .from("transactions")
         .select(
-          "*, categories(name), wallet:wallets!transactions_wallet_id_fkey(name, emoji, color), transaction_labels(label_id, labels(name))"
+          "*, categories(name), wallet:wallets!transactions_wallet_id_fkey(name, emoji, color), transaction_labels(label_id, labels(name)), recurring_id"
         )
         .gte("date", start)
         .lte("date", end)
@@ -66,9 +70,27 @@ export default function TransactionsClient({
     router.refresh();
   }
 
+  // Render recurring tab
+  if (activeTab === "recurring") {
+    return (
+      <>
+        {/* Tab bar */}
+        <div className="max-w-3xl mx-auto px-6 pt-12">
+          <TabBar active={activeTab} onChange={setActiveTab} />
+        </div>
+        <RecurringSection wallets={wallets} />
+      </>
+    );
+  }
+
   return (
     <>
       <main className="max-w-3xl mx-auto px-6 py-12">
+        {/* Tab bar */}
+        <div className="mb-6">
+          <TabBar active={activeTab} onChange={setActiveTab} />
+        </div>
+
         {/* Page title + action */}
         <div className="flex items-start justify-between mb-6 gap-4">
           <div>
@@ -151,5 +173,29 @@ export default function TransactionsClient({
         />
       )}
     </>
+  );
+}
+
+function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
+  const tabs: { id: Tab; label: string }[] = [
+    { id: "transactions", label: "Transactions" },
+    { id: "recurring",    label: "🔁 Recurring" },
+  ];
+  return (
+    <div className="flex gap-1 bg-white/[0.04] border border-white/[0.08] rounded-xl p-1 w-fit">
+      {tabs.map((t) => (
+        <button
+          key={t.id}
+          onClick={() => onChange(t.id)}
+          className={`font-inter text-sm px-4 py-1.5 rounded-lg transition-colors ${
+            active === t.id
+              ? "bg-white text-[#0A1628] font-semibold"
+              : "text-white/45 hover:text-white/70"
+          }`}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
   );
 }
