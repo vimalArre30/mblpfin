@@ -34,7 +34,11 @@ export default function SpendByCategory({ data }: { data: CategorySpend[] }) {
   }
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+    <div
+      data-ga-hover="chart_hover"
+      data-ga-chart-type="spend_by_category"
+      className="bg-white/5 border border-white/10 rounded-xl p-6"
+    >
       <h2 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-6">
         Spend by Category
       </h2>

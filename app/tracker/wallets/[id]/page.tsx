@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/tracker/fetch-all";
 import type { Transaction } from "@/components/tracker/TransactionFeed";
 import WalletDetailFAB from "./WalletDetailFAB";
 import WalletDetailFilter from "./WalletDetailFilter";
@@ -22,31 +23,43 @@ export default async function WalletDetailPage({
 
   if (!user) redirect("/tracker/login");
 
-  const [{ data: wallet }, { data: rawTx }, { data: allWallets }] = await Promise.all([
-    supabase
-      .from("wallets")
-      .select("id, name, emoji, color")
-      .eq("id", id)
-      .single(),
-    supabase
-      .from("transactions")
-      .select(
-        `
+  const [{ data: wallet }, { data: rawTx, error: txError }, { data: allWallets }] =
+    await Promise.all([
+      supabase
+        .from("wallets")
+        .select("id, name, emoji, color")
+        .eq("id", id)
+        .single(),
+      // Paged: a single PostgREST response is capped at 1000 rows silently.
+      fetchAllRows<Transaction>(
+        (from, to) =>
+          supabase
+            .from("transactions")
+            .select(
+              `
         *,
         wallet:wallets!transactions_wallet_id_fkey(name, emoji, color),
         categories(name),
         transaction_labels(label_id, labels(name))
       `
-      )
-      .eq("wallet_id", id)
-      .order("date", { ascending: false })
-      .order("created_at", { ascending: false }),
-    supabase.from("wallets").select("id, name, emoji, color, created_at"),
-  ]);
+            )
+            .eq("wallet_id", id)
+            .order("date", { ascending: false })
+            .order("created_at", { ascending: false })
+            .order("id", { ascending: false })
+            .range(from, to) as unknown as PromiseLike<{
+            data: Transaction[] | null;
+            error: { message: string } | null;
+          }>
+      ),
+      supabase.from("wallets").select("id, name, emoji, color, created_at"),
+    ]);
 
   if (!wallet) notFound();
+  // Fail loudly rather than show balances computed from a partial list.
+  if (txError) throw new Error(`Failed to load wallet transactions: ${txError.message}`);
 
-  const transactions: Transaction[] = (rawTx ?? []) as Transaction[];
+  const transactions: Transaction[] = rawTx;
 
   // Compute wallet-level stats using entry_type
   let totalIn = 0;

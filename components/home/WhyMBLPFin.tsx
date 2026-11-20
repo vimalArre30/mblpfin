@@ -18,7 +18,7 @@ export default function WhyMBLPFin() {
   ];
 
   return (
-    <section className="bg-[#0A1628] border-b border-white/[0.07]">
+    <section data-ga-section="why" className="bg-[#0A1628] border-b border-white/[0.07]">
       <div className="max-w-content mx-auto px-6 lg:px-8 py-16 lg:py-20">
         <p className="font-inter text-xs text-white/45 tracking-[0.15em] uppercase mb-3">
           Why MBL PFin

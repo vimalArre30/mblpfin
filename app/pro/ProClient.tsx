@@ -85,6 +85,8 @@ export default function ProClient({
       <div className="-mt-6 sm:-mt-10 mb-2">
         <a
           href="/tracker/dashboard"
+          data-ga="nav_click"
+          data-ga-link-name="back_to_dashboard"
           className="inline-flex items-center gap-1.5 text-sm text-white/50 hover:text-white/80 transition"
         >
           <span aria-hidden>←</span> Back to Dashboard
@@ -189,7 +191,7 @@ function FreeState({
       )}
 
       {/* Comparison */}
-      <div>
+      <div data-ga-section="plan_comparison">
         <h2 className="font-playfair text-xl font-semibold text-white mb-6 text-center">
           What&apos;s included
         </h2>

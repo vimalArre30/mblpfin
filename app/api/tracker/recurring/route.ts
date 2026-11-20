@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUserPlan, isAtFreeLimit, incrementEntryCount } from "@/lib/tracker/plan";
+import { toLocalISO } from "@/lib/tracker/dates";
 
 // ── GET /api/tracker/recurring ────────────────────────────────
 // Returns all recurring templates for the authenticated user,
@@ -107,7 +108,7 @@ export async function POST(req: NextRequest) {
     if (profile && !isAtFreeLimit(profile)) {
       const today = new Date();
       const txDate = new Date(today.getFullYear(), today.getMonth(), day_of_month);
-      const dateStr = txDate.toISOString().split("T")[0];
+      const dateStr = toLocalISO(txDate);
 
       const { error: txErr } = await supabase.from("transactions").insert({
         user_id:      user.id,

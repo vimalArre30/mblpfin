@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { track } from "@/lib/analytics/track";
 
 type OtpStep = "phone" | "otp";
 type PhoneStatus = "idle" | "sending" | "sent" | "verifying";
@@ -67,6 +68,7 @@ export default function LoginPage() {
         phone.length > 4
           ? phone.slice(0, 3) + "X".repeat(phone.length - 7) + phone.slice(-4)
           : phone;
+      track("otp_requested", { method: "phone" });
       setOtpSentMessage(`OTP sent to ${masked}`);
       setOtpStep("otp");
       setPhoneStatus("sent");
@@ -90,6 +92,7 @@ export default function LoginPage() {
       });
       if (error) {
         const msg = error.message.toLowerCase();
+        track("otp_failed", { error_type: msg.includes("expired") ? "expired" : "invalid" });
         setPhoneError(
           msg.includes("expired")
             ? "Code expired — tap Resend"
@@ -110,6 +113,21 @@ export default function LoginPage() {
           .single();
         const isOnboarded =
           !!profile?.name?.trim() && !!profile?.username?.trim();
+        // GA4: a user who has not onboarded yet is a brand-new account → sign_up
+        // (once per user, guarded in localStorage); everyone else → login.
+        if (isOnboarded) {
+          track("login", { method: "phone_otp" });
+        } else {
+          let alreadyCounted = false;
+          try {
+            const key = `ga_sign_up_${data.user.id}`;
+            alreadyCounted = !!localStorage.getItem(key);
+            if (!alreadyCounted) localStorage.setItem(key, "1");
+          } catch {
+            /* storage unavailable — fall through and count it */
+          }
+          track(alreadyCounted ? "login" : "sign_up", { method: "phone_otp" });
+        }
         router.push(isOnboarded ? "/tracker/dashboard" : "/tracker/onboarding");
         router.refresh();
       }

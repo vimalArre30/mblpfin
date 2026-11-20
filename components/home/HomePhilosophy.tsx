@@ -14,7 +14,7 @@ export default function HomePhilosophy() {
             where your money goes. Knowledge compounds. So does awareness.
           </p>
           <Link
-            href="/tracker/login"
+            href="/tracker/login" data-ga="cta_click" data-ga-cta-name="start_tracking_today" data-ga-cta-location="closing"
             className="font-inter text-sm font-semibold bg-white text-[#060F20] px-6 py-3 rounded-lg hover:bg-white/90 transition-colors inline-block"
           >
             Start tracking today →

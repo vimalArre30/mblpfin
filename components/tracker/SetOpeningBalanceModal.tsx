@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Wallet } from "./CreateWalletModal";
 import VoiceRecorder from "./VoiceRecorder";
+import { todayLocalISO } from "@/lib/tracker/dates";
 
 export default function SetOpeningBalanceModal({
   wallet,
@@ -15,7 +16,7 @@ export default function SetOpeningBalanceModal({
   onClose: () => void;
 }) {
   const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(todayLocalISO());
   const [note, setNote] = useState("");
   const [existingTxId, setExistingTxId] = useState<string | null>(null);
   const [fetching, setFetching] = useState(true);

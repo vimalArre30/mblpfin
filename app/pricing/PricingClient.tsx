@@ -154,7 +154,7 @@ export default function PricingClient({
       )}
 
       {/* Feature comparison table */}
-      <div>
+      <div data-ga-section="plan_comparison">
         <h2 className="font-playfair text-xl font-semibold text-white mb-6 text-center">
           What&apos;s included
         </h2>

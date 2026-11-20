@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { track } from "@/lib/analytics/track";
 
 type CategoryType = "income" | "expense" | "both";
 
@@ -195,6 +196,7 @@ function CategorySection({
     setEditName(item.name);
     setEditType((item.type ?? "expense") as CategoryType);
     setEditError("");
+    track("category_edit");
   }
 
   async function saveEdit(id: string) {
@@ -214,6 +216,7 @@ function CategorySection({
     setItems((prev) =>
       prev.map((c) => (c.id === id ? { ...c, name, type: editType } : c))
     );
+    track("category_edit_save");
     setEditingId(null);
   }
 
@@ -242,6 +245,7 @@ function CategorySection({
 
     if (dbErr) { setAddError(dbErr.message); return; }
 
+    track("category_add", { category_id: (data as Category).id, entry_type: newType });
     setItems((prev) => [...prev, data as Category]);
     setNewName("");
     setNewIcon("💰");
@@ -317,7 +321,7 @@ function CategorySection({
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => setEditingId(null)}
+                    onClick={() => { track("category_edit_cancel"); setEditingId(null); }}
                     className="flex-1 text-sm text-white/60 border border-white/15 rounded-lg py-1.5 hover:border-white/30 transition"
                   >
                     Cancel
@@ -447,6 +451,7 @@ function LabelSection({
 
     if (dbErr) { setError(dbErr.message); return; }
 
+    track("label_create_click");
     setItems((prev) => [...prev, data as Label]);
     setNewName("");
     nameRef.current?.focus();

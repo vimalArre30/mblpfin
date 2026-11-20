@@ -21,7 +21,8 @@ export const LINKS = {
   contactEmail: "hello@mrbottomline.club",
   linkedin: "https://www.linkedin.com/in/rvimalkumar/",
   mrbottomlineClub: "https://www.mrbottomline.club",
-  playStore: "https://play.google.com/store/apps/details?id=club.mblpfin",
+  playStore:
+    "https://play.google.com/store/apps/details?id=club.mblpfin&referrer=utm_source%3Dmblpfin_web%26utm_medium%3Dwebsite",
 };
 
 // --------------- MBL PFin YouTube Videos ---------------

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { track } from "@/lib/analytics/track";
 
 const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/;
 
@@ -15,6 +16,12 @@ export default function OnboardingClient({
   initialUsername: string;
 }) {
   const router = useRouter();
+
+  // GA4: onboarding screen shown (once per mount)
+  useEffect(() => {
+    track("onboarding_begin");
+  }, []);
+
   const [name, setName] = useState(initialName);
   const [username, setUsername] = useState(initialUsername);
   const [usernameStatus, setUsernameStatus] = useState<
@@ -77,6 +84,7 @@ export default function OnboardingClient({
       return;
     }
 
+    track("onboarding_complete", { has_username: username.trim().length > 0 });
     router.push("/tracker/dashboard");
     router.refresh();
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { track } from "@/lib/analytics/track";
 
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
 
@@ -52,6 +53,7 @@ export default function ProfileSection({ initialName, initialUsername }: Props) 
       return;
     }
 
+    track("profile_save_click");
     setSuccess(true);
   }
 

@@ -83,7 +83,7 @@ export default function Navbar() {
 
         {/* Logo — always links home */}
         <Link
-          href="/"
+          href="/" data-ga="nav_click" data-ga-link-name="home"
           className="font-playfair text-base font-bold text-white tracking-tight hover:text-white/75 transition-colors flex-shrink-0"
         >
           MBL PFin
@@ -97,7 +97,7 @@ export default function Navbar() {
               return (
                 <li key={href}>
                   <Link
-                    href={href}
+                    href={href} data-ga="nav_click" data-ga-link-name={label.toLowerCase()}
                     className={`relative flex items-center h-14 px-3 font-inter text-sm font-medium whitespace-nowrap transition-colors ${
                       active
                         ? "text-white after:absolute after:bottom-0 after:inset-x-0 after:h-0.5 after:bg-white"
@@ -111,7 +111,7 @@ export default function Navbar() {
             })}
             <li>
               <Link
-                href="/pro"
+                href="/pro" data-ga="paywall_viewed" data-ga-trigger-source="nav"
                 className={`relative flex items-center h-14 px-3 font-inter text-sm font-semibold whitespace-nowrap transition-colors ${
                   pathname === "/pro"
                     ? "text-amber-300 after:absolute after:bottom-0 after:inset-x-0 after:h-0.5 after:bg-amber-400"
@@ -126,7 +126,7 @@ export default function Navbar() {
           <ul className="hidden lg:flex items-center gap-6">
             <li>
               <Link
-                href="/writing"
+                href="/writing" data-ga="nav_click" data-ga-link-name="blog"
                 className={`font-inter text-sm transition-colors ${
                   pathname.startsWith("/writing") ? "text-white" : "text-white/50 hover:text-white"
                 }`}
@@ -136,7 +136,7 @@ export default function Navbar() {
             </li>
             <li>
               <Link
-                href="/pro"
+                href="/pro" data-ga="nav_click" data-ga-link-name="pricing"
                 className={`font-inter text-sm transition-colors ${
                   pathname === "/pro" ? "text-white" : "text-white/50 hover:text-white"
                 }`}
@@ -146,7 +146,7 @@ export default function Navbar() {
             </li>
             <li>
               <a
-                href={LINKS.mrbottomlineClub}
+                href={LINKS.mrbottomlineClub} data-ga="nav_click" data-ga-link-name="mrbottomline_club"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-inter text-sm text-white/50 hover:text-white transition-colors"
@@ -197,7 +197,7 @@ export default function Navbar() {
             </Link>
           ) : (
             <Link
-              href="/tracker/login"
+              href="/tracker/login" data-ga="login_click" data-ga-cta-location="nav"
               className="font-inter text-sm font-semibold bg-white text-[#0A1628] px-4 py-1.5 rounded-lg hover:bg-white/90 transition-colors"
             >
               Log in
@@ -227,7 +227,7 @@ export default function Navbar() {
                 {TRACKER_NAV.map(({ href, label }) => (
                   <Link
                     key={href}
-                    href={href}
+                    href={href} data-ga="nav_click" data-ga-link-name={label.toLowerCase()}
                     onClick={() => setMenuOpen(false)}
                     className={`font-inter text-sm py-2.5 transition-colors ${
                       pathname === href ? "text-white font-medium" : "text-white/60 hover:text-white"
@@ -237,7 +237,7 @@ export default function Navbar() {
                   </Link>
                 ))}
                 <Link
-                  href="/pro"
+                  href="/pro" data-ga="paywall_viewed" data-ga-trigger-source="nav"
                   onClick={() => setMenuOpen(false)}
                   className="font-inter text-sm font-semibold text-amber-400 py-2.5"
                 >
@@ -257,9 +257,9 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <Link href="/writing" onClick={() => setMenuOpen(false)} className="font-inter text-sm text-white/60 hover:text-white transition-colors py-2.5">Blog</Link>
-                <Link href="/pro"     onClick={() => setMenuOpen(false)} className="font-inter text-sm text-white/60 hover:text-white transition-colors py-2.5">Pricing</Link>
-                <a href={LINKS.mrbottomlineClub} target="_blank" rel="noopener noreferrer" className="font-inter text-sm text-white/60 hover:text-white transition-colors py-2.5">
+                <Link href="/writing" data-ga="nav_click" data-ga-link-name="blog" onClick={() => setMenuOpen(false)} className="font-inter text-sm text-white/60 hover:text-white transition-colors py-2.5">Blog</Link>
+                <Link href="/pro" data-ga="nav_click" data-ga-link-name="pricing"     onClick={() => setMenuOpen(false)} className="font-inter text-sm text-white/60 hover:text-white transition-colors py-2.5">Pricing</Link>
+                <a href={LINKS.mrbottomlineClub} data-ga="nav_click" data-ga-link-name="mrbottomline_club" target="_blank" rel="noopener noreferrer" className="font-inter text-sm text-white/60 hover:text-white transition-colors py-2.5">
                   mrbottomline.club ↗
                 </a>
                 <div className="pt-3 mt-2 border-t border-white/[0.08]">
@@ -268,7 +268,7 @@ export default function Navbar() {
                       Open tracker →
                     </Link>
                   ) : (
-                    <Link href="/tracker/login" onClick={() => setMenuOpen(false)} className="font-inter text-sm font-semibold bg-white text-[#0A1628] px-4 py-2 rounded-lg inline-block">
+                    <Link href="/tracker/login" data-ga="login_click" data-ga-cta-location="nav" onClick={() => setMenuOpen(false)} className="font-inter text-sm font-semibold bg-white text-[#0A1628] px-4 py-2 rounded-lg inline-block">
                       Log in
                     </Link>
                   )}

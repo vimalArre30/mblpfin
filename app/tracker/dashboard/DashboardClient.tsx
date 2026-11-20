@@ -13,6 +13,8 @@ import EntryCountPill from "@/components/tracker/EntryCountPill";
 import ExpiredBanner from "@/components/tracker/ExpiredBanner";
 import HaltedBanner from "@/components/tracker/HaltedBanner";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
+import { toLocalISO } from "@/lib/tracker/dates";
+import { track } from "@/lib/analytics/track";
 
 interface Props {
   stats: { totalIncome: number; totalExpense: number; netBalance: number; walletCount: number };
@@ -64,11 +66,11 @@ export default function DashboardClient({
   // Period state — initialised to the current month so the first render is stable
   const [periodStart, setPeriodStart] = useState<string>(() => {
     const n = new Date();
-    return new Date(n.getFullYear(), n.getMonth(), 1).toISOString().split("T")[0];
+    return toLocalISO(new Date(n.getFullYear(), n.getMonth(), 1));
   });
   const [periodEnd, setPeriodEnd] = useState<string>(() => {
     const n = new Date();
-    return new Date(n.getFullYear(), n.getMonth() + 1, 0).toISOString().split("T")[0];
+    return toLocalISO(new Date(n.getFullYear(), n.getMonth() + 1, 0));
   });
   const [periodLabel, setPeriodLabel] = useState<string>(() =>
     new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" })
@@ -163,7 +165,14 @@ export default function DashboardClient({
             </span>
             <select
               value={selectedWalletId}
-              onChange={(e) => setSelectedWalletId(e.target.value)}
+              onChange={(e) => {
+                const id = e.target.value;
+                setSelectedWalletId(id);
+                track("wallet_filter_change", {
+                  wallet_id: id,
+                  wallet_name: id === "all" ? "All Wallets" : wallets.find((w) => w.id === id)?.name,
+                });
+              }}
               className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30 transition cursor-pointer"
             >
               <option value="all">All Wallets</option>
@@ -218,18 +227,18 @@ export default function DashboardClient({
               Transaction Feed
             </h2>
             <button
-              onClick={() => setShowModal(true)}
+              data-ga="add_entry_click" data-ga-cta-location="dashboard" onClick={() => setShowModal(true)}
               className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold text-navy-dark bg-white rounded-xl px-4 py-2 hover:bg-white/90 transition"
             >
               <span className="text-base leading-none">+</span> Add Entry
             </button>
           </div>
-          <TransactionFeed transactions={periodFiltered} wallets={wallets} />
+          <TransactionFeed transactions={periodFiltered} wallets={wallets} analyticsSource="dashboard_feed" />
         </section>
       </main>
 
       <button
-        onClick={() => setShowModal(true)}
+        data-ga="add_entry_click" data-ga-cta-location="dashboard" onClick={() => setShowModal(true)}
         className="sm:hidden fixed bottom-6 right-5 z-40 flex items-center gap-2 bg-white text-navy-dark font-semibold text-sm rounded-2xl px-5 py-3 shadow-lg shadow-black/40 hover:bg-white/90 transition"
       >
         <span className="text-lg leading-none">+</span> Add Entry

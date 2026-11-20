@@ -44,7 +44,7 @@ export default function PricingPreview() {
             </h2>
           </div>
           <Link
-            href="/pro"
+            href="/pro" data-ga="cta_click" data-ga-cta-name="see_full_pricing" data-ga-cta-location="home_pricing"
             className="hidden sm:block font-inter text-sm text-white/65 hover:text-white transition-colors"
           >
             See full pricing →
@@ -79,7 +79,7 @@ export default function PricingPreview() {
               </ul>
 
               <Link
-                href={plan.ctaHref}
+                href={plan.ctaHref} data-ga="pricing_plan_click" data-ga-plan={plan.name.toLowerCase().replace(" ", "_")} data-ga-cta-location="home_pricing"
                 className={`mt-auto text-center font-inter text-sm font-medium py-2.5 rounded-lg transition-colors ${
                   plan.highlight
                     ? "bg-white text-[#0A1628] hover:bg-white/90"
@@ -93,7 +93,7 @@ export default function PricingPreview() {
         </div>
 
         <Link
-          href="/pro"
+          href="/pro" data-ga="cta_click" data-ga-cta-name="see_full_pricing" data-ga-cta-location="home_pricing"
           className="sm:hidden mt-6 block font-inter text-sm text-white/65 hover:text-white transition-colors"
         >
           See full pricing →

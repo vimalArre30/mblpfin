@@ -20,7 +20,7 @@ export default function AndroidDownload() {
 
           <div className="flex-shrink-0">
             <a
-              href={LINKS.playStore}
+              href={LINKS.playStore} data-ga="play_store_click" data-ga-cta-location="android_section"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 bg-white text-[#0A1628] px-5 py-3 rounded-xl hover:bg-white/90 transition-colors"

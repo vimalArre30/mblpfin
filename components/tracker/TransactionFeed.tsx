@@ -7,6 +7,7 @@ import type { Wallet } from "./CreateWalletModal";
 import AddEntryModal, { type EditableTransaction } from "./AddEntryModal";
 import TransactionDetail from "./TransactionDetail";
 import ConfirmDeleteDialog from "./ConfirmDeleteDialog";
+import { track } from "@/lib/analytics/track";
 
 export interface Transaction {
   id: string;
@@ -59,10 +60,13 @@ export default function TransactionFeed({
   transactions,
   wallets = [],
   onSnapshotDate,
+  analyticsSource,
 }: {
   transactions: Transaction[];
   wallets?: Wallet[];
   onSnapshotDate?: (date: string) => void;
+  /** GA4 `source` param for transaction_click (e.g. "dashboard_feed"). */
+  analyticsSource?: string;
 }) {
   const router = useRouter();
   // Only one row swiped at a time
@@ -156,7 +160,11 @@ export default function TransactionFeed({
                   onSwipe={handleSwipe}
                   onEdit={handleEdit}
                   onDelete={(t) => { setPendingDelete(t); }}
-                  onTap={(t) => { setSwipedId(null); setViewingTx(t); }}
+                  onTap={(t) => {
+                    setSwipedId(null);
+                    setViewingTx(t);
+                    track("transaction_click", { transaction_id: t.id, source: analyticsSource });
+                  }}
                 />
               ))}
             </div>

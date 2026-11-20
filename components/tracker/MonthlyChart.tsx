@@ -25,7 +25,11 @@ export default function MonthlyChart({ data }: { data: MonthlyDataPoint[] }) {
   }
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+    <div
+      data-ga-hover="chart_hover"
+      data-ga-chart-type="monthly_spend_6mo"
+      className="bg-white/5 border border-white/10 rounded-xl p-6"
+    >
       <h2 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-6">
         Monthly Spend (last 6 months)
       </h2>

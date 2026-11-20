@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import SpendByCategory, {
@@ -13,6 +13,8 @@ import NeedWantRatio, {
   type NeedWantData,
 } from "@/components/tracker/NeedWantRatio";
 import PeriodFilter from "@/components/tracker/PeriodFilter";
+import { fetchAllRows } from "@/lib/tracker/fetch-all";
+import { track } from "@/lib/analytics/track";
 import AddEntryModal from "@/components/tracker/AddEntryModal";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
 
@@ -46,15 +48,24 @@ export default function AnalyticsClient({ wallets }: { wallets: Wallet[] }) {
     async (start: string, end: string, label: string) => {
       setPeriodLabel(label);
       setLoading(true);
-      const { data } = await supabase
-        .from("transactions")
-        .select(
-          "amount, date, type, entry_type, categories(name), transaction_labels(labels(name))"
-        )
-        .gte("date", start)
-        .lte("date", end)
-        .order("date", { ascending: false });
-      setTxs((data ?? []) as unknown as RawTx[]);
+      // Paged: a single response is silently capped at 1000 rows.
+      const { data } = await fetchAllRows<RawTx>(
+        (from, to) =>
+          supabase
+            .from("transactions")
+            .select(
+              "amount, date, type, entry_type, categories(name), transaction_labels(labels(name))"
+            )
+            .gte("date", start)
+            .lte("date", end)
+            .order("date", { ascending: false })
+            .order("id", { ascending: false })
+            .range(from, to) as unknown as PromiseLike<{
+            data: RawTx[] | null;
+            error: { message: string } | null;
+          }>
+      );
+      setTxs(data);
       setLoading(false);
 
       if (insightFetchedForPeriod.current !== label) {
@@ -115,6 +126,11 @@ export default function AnalyticsClient({ wallets }: { wallets: Wallet[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
+
+  // GA4: the AI insight card rendered
+  useEffect(() => {
+    if (insight) track("ai_insight_view");
+  }, [insight]);
 
   const analytics = useMemo(() => {
     let totalSpent = 0;
@@ -218,10 +234,12 @@ export default function AnalyticsClient({ wallets }: { wallets: Wallet[] }) {
             <MonthlyChart data={analytics.monthlyData} />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <SpendByCategory data={analytics.chartData} />
-              <NeedWantRatio
-                needTotal={analytics.needWant.needTotal}
-                wantTotal={analytics.needWant.wantTotal}
-              />
+              <div data-ga-hover="chart_hover" data-ga-chart-type="need_vs_want">
+                <NeedWantRatio
+                  needTotal={analytics.needWant.needTotal}
+                  wantTotal={analytics.needWant.wantTotal}
+                />
+              </div>
             </div>
           </>
         )}
@@ -229,7 +247,7 @@ export default function AnalyticsClient({ wallets }: { wallets: Wallet[] }) {
 
       {/* FAB */}
       <button
-        onClick={() => setShowModal(true)}
+        data-ga="add_entry_click" data-ga-cta-location="analytics" onClick={() => setShowModal(true)}
         className="sm:hidden fixed bottom-6 right-5 z-40 flex items-center gap-2 bg-white text-navy-dark font-semibold text-sm rounded-2xl px-5 py-3 shadow-lg shadow-black/40 hover:bg-white/90 transition"
         aria-label="Add Entry"
       >

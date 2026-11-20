@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { track } from "@/lib/analytics/track";
+
+// Stable ids for GA `faq_expand` (same order as `faqs` below).
+const FAQ_IDS = ["free", "voice", "security", "difference"];
 
 const faqs = [
   {
@@ -42,7 +46,11 @@ export default function FAQ() {
             >
               <button
                 className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left"
-                onClick={() => setOpen(open === i ? null : i)}
+                onClick={() => {
+                  // Track opens only (not closes)
+                  if (open !== i) track("faq_expand", { question_id: FAQ_IDS[i] ?? String(i) });
+                  setOpen(open === i ? null : i);
+                }}
               >
                 <span className="font-inter text-sm font-medium text-white/70">
                   {faq.q}

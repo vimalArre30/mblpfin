@@ -6,6 +6,8 @@ import type { MonthlyDataPoint } from "@/components/tracker/MonthlyChart";
 import type { NeedWantData } from "@/components/tracker/NeedWantRatio";
 import type { Transaction } from "@/components/tracker/TransactionFeed";
 import { getUserPlan, isProActive, isOnboarded } from "@/lib/tracker/plan";
+import { toLocalISO } from "@/lib/tracker/dates";
+import { fetchAllRows } from "@/lib/tracker/fetch-all";
 
 export const dynamic = "force-dynamic";
 
@@ -44,20 +46,32 @@ export default async function DashboardPage() {
     !isHalted;
 
   // Fetch transactions with joined data (including destination wallet for transfers)
-  const { data: rawTransactions } = await supabase
-    .from("transactions")
-    .select(
-      `
+  // Paged: PostgREST caps a single response at 1000 rows without any error,
+  // which silently under-counted every total for accounts past 1000 entries.
+  const { data: rawTransactions, error: txError } = await fetchAllRows<Transaction>(
+    (from, to) =>
+      supabase
+        .from("transactions")
+        .select(
+          `
       *,
       wallet:wallets!transactions_wallet_id_fkey(name, emoji, color),
       categories(name),
       transaction_labels(label_id, labels(name))
     `
-    )
-    .order("date", { ascending: false })
-    .order("created_at", { ascending: false });
+        )
+        .order("date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(from, to) as unknown as PromiseLike<{
+        data: Transaction[] | null;
+        error: { message: string } | null;
+      }>
+  );
+  // Fail loudly rather than render totals computed from a partial list.
+  if (txError) throw new Error(`Failed to load transactions: ${txError.message}`);
 
-  const transactions: Transaction[] = (rawTransactions ?? []) as Transaction[];
+  const transactions: Transaction[] = rawTransactions;
 
   // Fetch wallets for AddEntryModal + transfer destination lookup
   const { data: wallets } = await supabase
@@ -77,9 +91,9 @@ export default async function DashboardPage() {
   const monthlyMap: Record<string, { month: string; total: number }> = {};
 
   // Six months ago, first day
-  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
-    .toISOString()
-    .split("T")[0];
+  const sixMonthsAgo = toLocalISO(
+    new Date(now.getFullYear(), now.getMonth() - 5, 1)
+  );
 
   for (const tx of transactions) {
     const amount = Number(tx.amount);

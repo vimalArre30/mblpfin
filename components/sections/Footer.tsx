@@ -24,7 +24,7 @@ export default function Footer() {
             {FOOTER.links.map((link) => (
               <li key={link.label}>
                 <SmartLink
-                  href={link.href}
+                  href={link.href} data-ga="nav_click" data-ga-link-name={link.label} data-ga-cta-location="footer"
                   target={link.href.startsWith("http") ? "_blank" : undefined}
                   rel={link.href.startsWith("http") ? "noopener noreferrer" : undefined}
                   className="font-inter text-sm text-blue-100 hover:text-white transition-colors"
@@ -44,9 +44,7 @@ export default function Footer() {
           <ul className="flex flex-col gap-3">
             {FOOTER.social.map((link) => (
               <li key={link.label}>
-                <Link
-                  href={link.href}
-                  target="_blank"
+                <Link href={link.href} data-ga="nav_click" data-ga-link-name={link.label} data-ga-cta-location="footer" target="_blank"
                   rel="noopener noreferrer"
                   className="font-inter text-sm text-blue-100 hover:text-white transition-colors"
                 >

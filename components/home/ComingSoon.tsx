@@ -23,7 +23,7 @@ export default function ComingSoon() {
   ];
 
   return (
-    <section className="bg-[#112244] border-b border-white/[0.07]">
+    <section data-ga-section="roadmap" className="bg-[#112244] border-b border-white/[0.07]">
       <div className="max-w-content mx-auto px-6 lg:px-8 py-16 lg:py-20">
         <div className="flex items-center gap-3 mb-3">
           <p className="font-inter text-xs text-white/45 tracking-[0.15em] uppercase">

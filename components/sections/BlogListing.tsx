@@ -56,6 +56,8 @@ function FilterButton({ label, active, onClick }: FilterButtonProps) {
   return (
     <button
       onClick={onClick}
+      data-ga="blog_filter"
+      data-ga-filter-value={label}
       className={[
         "px-4 py-2 rounded-full font-inter text-sm font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2",
         active
@@ -76,6 +78,9 @@ function PostCard({ post }: PostCardProps) {
   return (
     <Link
       href={`/writing/${post.slug}`}
+      data-ga="blog_card_click"
+      data-ga-article-slug={post.slug}
+      data-ga-content-category={post.category}
       className="group flex flex-col bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden"
     >
       {/* Cover image */}

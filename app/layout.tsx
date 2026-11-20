@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { headers } from "next/headers";
 import { Playfair_Display, Inter } from "next/font/google";
 import "./globals.css";
 import { BRAND } from "@/lib/constants";
@@ -12,10 +13,12 @@ import { createClient } from "@/lib/supabase/server";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import Navbar from "@/components/sections/Navbar";
 import SiteFooter from "@/components/SiteFooter";
+import GaTracker from "@/components/analytics/GaTracker";
+import { GOOGLE_ADS_ID, resolveGaTarget } from "@/lib/analytics/config";
 
-// Google Analytics 4 measurement ID — set NEXT_PUBLIC_GA_ID in Vercel + .env.local.
-// Falsy means GA is disabled (e.g. local dev without the env var set).
-const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
+// GA4 property is chosen per request from the hostname (see lib/analytics/config.ts):
+// production host → production property; any other host → staging property;
+// localhost → GA disabled.
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -78,6 +81,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const reqHeaders = await headers();
+  const { id: GA_ID, isProduction } = resolveGaTarget(
+    reqHeaders.get("x-forwarded-host") ?? reqHeaders.get("host")
+  );
   // Read the Supabase session server-side from cookies. We pass the resulting
   // user (or null) into AuthProvider as initialUser, so the Navbar and any
   // other client component can call useUser() and get the correct identity
@@ -116,7 +123,7 @@ export default async function RootLayout({
       </head>
       <body>
         {/* Google Analytics 4 — gtag.js.
-            Loads only when NEXT_PUBLIC_GA_ID is set (production + preview).
+            Property is selected by hostname (production vs staging); disabled on localhost.
             next/script with strategy="afterInteractive" ensures it doesn't
             block initial render. Same GA4 property powers the Flutter app
             via Firebase Analytics — one dashboard, web + Android. */}
@@ -132,7 +139,7 @@ export default async function RootLayout({
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
                 gtag('config', '${GA_ID}', { anonymize_ip: true });
-                gtag('config', 'AW-18168938718');
+                ${isProduction ? `gtag('config', '${GOOGLE_ADS_ID}');` : ""}
               `}
             </Script>
           </>
@@ -144,6 +151,7 @@ export default async function RootLayout({
             - SiteFooter renders the marketing Footer on content pages and
               hides itself inside /tracker/* (logged-in product chrome).
             Individual pages should no longer render their own Navbar/Footer. */}
+        <GaTracker />
         <AuthProvider initialUser={user}>
           <Navbar />
           {children}

@@ -5,9 +5,14 @@
  * `window.Razorpay` becomes available after the script loads.
  */
 
+import { track } from "@/lib/analytics/track";
+
 declare global {
   interface Window {
-    Razorpay?: new (options: RazorpayCheckoutOptions) => { open: () => void };
+    Razorpay?: new (options: RazorpayCheckoutOptions) => {
+      open: () => void;
+      on?: (event: string, cb: (resp: unknown) => void) => void;
+    };
   }
 }
 
@@ -25,6 +30,11 @@ export type RazorpayCheckoutOptions = {
   }) => void;
   modal?: { ondismiss?: () => void; escape?: boolean; backdropclose?: boolean };
 };
+
+const PLAN_META = {
+  monthly: { item_id: "pro_monthly", value: 199 },
+  annual: { item_id: "pro_annual", value: 899 },
+} as const;
 
 /**
  * Lazy-load the Razorpay checkout script. Returns once window.Razorpay is ready.
@@ -63,6 +73,14 @@ export async function startSubscriptionCheckout(opts: {
   onDismiss?: () => void;
 }) {
   const { interval, prefill, onSuccess, onDismiss } = opts;
+  const plan = PLAN_META[interval];
+
+  // GA4 ecommerce: user clicked the subscribe CTA.
+  track("begin_checkout", {
+    currency: "INR",
+    value: plan.value,
+    items: [{ item_id: plan.item_id, item_name: "MBL PFin Pro", quantity: 1 }],
+  });
 
   const res = await fetch("/api/razorpay/create-subscription", {
     method: "POST",
@@ -91,6 +109,8 @@ export async function startSubscriptionCheckout(opts: {
 
   if (!window.Razorpay) throw new Error("Razorpay SDK failed to load");
 
+  let completed = false;
+
   const rzp = new window.Razorpay({
     key: key_id,
     subscription_id,
@@ -98,17 +118,38 @@ export async function startSubscriptionCheckout(opts: {
     description: interval === "annual" ? "Annual subscription · ₹899/yr" : "Monthly subscription · ₹199/mo",
     prefill,
     theme: { color: "#F59E0B" },
-    handler: () => {
+    handler: (resp) => {
+      completed = true;
+      // GA4 purchase. The page is about to hard-navigate, so use the beacon
+      // transport and give it a moment to flush. The Razorpay webhook remains
+      // the source of truth for the subscription itself.
+      track("purchase", {
+        transaction_id: resp?.razorpay_payment_id,
+        currency: "INR",
+        value: plan.value,
+        items: [{ item_id: plan.item_id, item_name: "MBL PFin Pro", quantity: 1 }],
+        transport_type: "beacon",
+      });
       // Webhook will update the DB; redirect to a "thanks" route that polls
       onSuccess?.();
-      window.location.href = "/pro?welcome=1";
+      setTimeout(() => {
+        window.location.href = "/pro?welcome=1";
+      }, 400);
     },
     modal: {
       ondismiss: () => {
+        if (!completed) {
+          track("purchase_failed", { plan: plan.item_id, error_type: "dismissed" });
+        }
         onDismiss?.();
       },
     },
   });
 
+  rzp.on?.("payment.failed", () => {
+    track("purchase_failed", { plan: plan.item_id, error_type: "failed" });
+  });
+
+  track("checkout_progress", { plan: plan.item_id, checkout_step: "razorpay_open" });
   rzp.open();
 }

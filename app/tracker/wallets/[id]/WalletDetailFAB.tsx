@@ -23,7 +23,7 @@ export default function WalletDetailFAB({
   return (
     <>
       <button
-        onClick={() => setShowModal(true)}
+        data-ga="add_entry_click" data-ga-cta-location="wallet_detail" onClick={() => setShowModal(true)}
         className="sm:hidden fixed bottom-6 right-5 z-40 flex items-center gap-2 bg-white text-navy-dark font-semibold text-sm rounded-2xl px-5 py-3 shadow-lg shadow-black/40 hover:bg-white/90 transition"
         aria-label="Add Entry"
       >

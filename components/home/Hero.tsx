@@ -21,13 +21,13 @@ export default function Hero() {
           </p>
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/tracker/login"
+              href="/tracker/login" data-ga="cta_click" data-ga-cta-name="get_started_free" data-ga-cta-location="hero"
               className="font-inter text-sm font-semibold bg-white text-[#0A1628] px-5 py-2.5 rounded-lg hover:bg-white/90 transition-colors"
             >
               Get started free →
             </Link>
             <a
-              href={LINKS.playStore}
+              href={LINKS.playStore} data-ga="play_store_click" data-ga-cta-location="hero"
               target="_blank"
               rel="noopener noreferrer"
               className="font-inter text-sm border border-white/20 text-white px-5 py-2.5 rounded-lg hover:bg-white/[0.06] transition-colors"

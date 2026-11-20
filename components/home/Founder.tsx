@@ -48,7 +48,7 @@ export default function Founder() {
           {YOUTUBE_VIDEOS.map((video) => (
             <a
               key={video.id}
-              href={video.href}
+              href={video.href} data-ga="video_click" data-ga-video-title={video.title} data-ga-cta-location="founder_videos"
               target="_blank"
               rel="noopener noreferrer"
               className="group relative rounded-xl overflow-hidden aspect-video block"

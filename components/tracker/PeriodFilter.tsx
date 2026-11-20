@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { toLocalISO } from "@/lib/tracker/dates";
+import { track } from "@/lib/analytics/track";
 
 interface PeriodFilterProps {
   onChange: (start: string, end: string, label: string) => void;
 }
 
 function toISO(d: Date): string {
-  return d.toISOString().split("T")[0];
+  return toLocalISO(d);
 }
 
 function computePeriod(
@@ -58,6 +60,7 @@ export default function PeriodFilter({ onChange }: PeriodFilterProps) {
   }
 
   function prev() {
+    track("date_nav_click", { direction: "prev", period: mode });
     animateThen(() =>
       setAnchor((a) =>
         mode === "month"
@@ -69,6 +72,7 @@ export default function PeriodFilter({ onChange }: PeriodFilterProps) {
 
   function next() {
     if (atCurrent) return;
+    track("date_nav_click", { direction: "next", period: mode });
     animateThen(() =>
       setAnchor((a) =>
         mode === "month"
@@ -79,6 +83,7 @@ export default function PeriodFilter({ onChange }: PeriodFilterProps) {
   }
 
   function switchMode(m: "month" | "year") {
+    if (m !== mode) track("period_toggle", { view_type: m });
     animateThen(() => setMode(m));
   }
 

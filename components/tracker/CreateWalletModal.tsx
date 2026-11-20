@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import VoiceRecorder from "./VoiceRecorder";
+import { todayLocalISO } from "@/lib/tracker/dates";
 
 const EMOJI_OPTIONS = [
   "💰", "💳", "🏦", "💵", "🛒", "🍔", "✈️", "🏠",
@@ -41,7 +42,7 @@ export default function CreateWalletModal({
   const [color, setColor] = useState(PRESET_COLORS[0]);
   const [openingBalance, setOpeningBalance] = useState("");
   const [openingBalanceDate, setOpeningBalanceDate] = useState(
-    new Date().toISOString().split("T")[0]
+    todayLocalISO()
   );
   const [openingBalanceNote, setOpeningBalanceNote] = useState("");
   const [showVoice, setShowVoice] = useState(false);

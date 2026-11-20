@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toLocalISO } from "@/lib/tracker/dates";
 
 type Category = { id: string; name: string; icon: string | null; type: string };
 type Label    = { id: string; name: string; color: string | null };
@@ -25,7 +26,7 @@ function monthOptions() {
   for (let i = 0; i <= 24; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
     opts.push({
-      value: d.toISOString().split("T")[0],
+      value: toLocalISO(d),
       label: `${MONTHS[d.getMonth()]} ${d.getFullYear()}`,
     });
   }
@@ -34,7 +35,7 @@ function monthOptions() {
 
 export default function RecurringModal({ categories, labels, wallets, onCreated, onClose }: Props) {
   const now = new Date();
-  const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+  const thisMonth = toLocalISO(new Date(now.getFullYear(), now.getMonth(), 1));
 
   const [entryType,  setEntryType]  = useState<"income" | "expense">("expense");
   const [amount,     setAmount]     = useState("");

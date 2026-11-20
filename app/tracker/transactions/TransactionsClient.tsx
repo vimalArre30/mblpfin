@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import AddEntryModal from "@/components/tracker/AddEntryModal";
 import TransactionFeed, { type Transaction } from "@/components/tracker/TransactionFeed";
 import PeriodFilter from "@/components/tracker/PeriodFilter";
+import { fetchAllRows } from "@/lib/tracker/fetch-all";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
 import RecurringSection from "./RecurringSection";
 
@@ -44,16 +45,25 @@ export default function TransactionsClient({
     async (start: string, end: string, label: string) => {
       setPeriodLabel(label);
       setPeriodLoading(true);
-      const { data } = await supabase
-        .from("transactions")
-        .select(
-          "*, categories(name), wallet:wallets!transactions_wallet_id_fkey(name, emoji, color), transaction_labels(label_id, labels(name)), recurring_id"
-        )
-        .gte("date", start)
-        .lte("date", end)
-        .order("date", { ascending: false })
-        .order("created_at", { ascending: false });
-      setPeriodTx((data ?? []) as Transaction[]);
+      // Paged: a single response is silently capped at 1000 rows.
+      const { data } = await fetchAllRows<Transaction>(
+        (from, to) =>
+          supabase
+            .from("transactions")
+            .select(
+              "*, categories(name), wallet:wallets!transactions_wallet_id_fkey(name, emoji, color), transaction_labels(label_id, labels(name)), recurring_id"
+            )
+            .gte("date", start)
+            .lte("date", end)
+            .order("date", { ascending: false })
+            .order("created_at", { ascending: false })
+            .order("id", { ascending: false })
+            .range(from, to) as unknown as PromiseLike<{
+            data: Transaction[] | null;
+            error: { message: string } | null;
+          }>
+      );
+      setPeriodTx(data);
       setPeriodLoading(false);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,7 +114,7 @@ export default function TransactionsClient({
             )}
           </div>
           <button
-            onClick={() => setShowModal(true)}
+            data-ga="add_entry_click" data-ga-cta-location="transactions" onClick={() => setShowModal(true)}
             className="flex-shrink-0 flex items-center gap-1.5 bg-white text-[#0F1E40] text-sm font-semibold rounded-xl px-5 py-2.5 hover:bg-white/90 transition"
           >
             <span className="text-base leading-none">+</span> Add Entry
@@ -133,7 +143,7 @@ export default function TransactionsClient({
               Try a different period or log a new entry.
             </p>
             <button
-              onClick={() => setShowModal(true)}
+              data-ga="add_entry_click" data-ga-cta-location="transactions" onClick={() => setShowModal(true)}
               className="bg-white text-[#0F1E40] text-sm font-semibold rounded-xl px-6 py-2.5 hover:bg-white/90 transition"
             >
               + Add Entry
@@ -144,14 +154,14 @@ export default function TransactionsClient({
             <p className="text-xs font-semibold text-white/30 uppercase tracking-widest mb-4">
               {periodLabel}
             </p>
-            <TransactionFeed transactions={transactions} wallets={wallets} />
+            <TransactionFeed transactions={transactions} wallets={wallets} analyticsSource="transactions_page" />
           </>
         )}
       </main>
 
       {/* Floating Add button (mobile) */}
       <button
-        onClick={() => setShowModal(true)}
+        data-ga="add_entry_click" data-ga-cta-location="transactions" onClick={() => setShowModal(true)}
         className="fixed bottom-6 right-6 sm:hidden w-14 h-14 bg-white text-[#0F1E40] rounded-full shadow-2xl text-2xl font-bold flex items-center justify-center hover:bg-white/90 transition active:scale-95"
         aria-label="Add Entry"
       >

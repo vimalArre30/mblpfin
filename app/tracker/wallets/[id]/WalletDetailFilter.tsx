@@ -7,6 +7,7 @@ import TransactionFeed from "@/components/tracker/TransactionFeed";
 import PeriodFilter from "@/components/tracker/PeriodFilter";
 import WalletSnapshotPanel from "@/components/tracker/WalletSnapshotPanel";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
+import { toLocalISO } from "@/lib/tracker/dates";
 
 type CategoryPill = {
   key: string; // category_id uuid | "transfer"
@@ -41,11 +42,11 @@ export default function WalletDetailFilter({
   // Period state
   const [periodStart, setPeriodStart] = useState<string>(() => {
     const n = new Date();
-    return new Date(n.getFullYear(), n.getMonth(), 1).toISOString().split("T")[0];
+    return toLocalISO(new Date(n.getFullYear(), n.getMonth(), 1));
   });
   const [periodEnd, setPeriodEnd] = useState<string>(() => {
     const n = new Date();
-    return new Date(n.getFullYear(), n.getMonth() + 1, 0).toISOString().split("T")[0];
+    return toLocalISO(new Date(n.getFullYear(), n.getMonth() + 1, 0));
   });
   const [periodLabel, setPeriodLabel] = useState<string>(() =>
     new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" })
@@ -300,6 +301,7 @@ export default function WalletDetailFilter({
         transactions={filtered}
         wallets={wallets}
         onSnapshotDate={setSnapshotDate}
+        analyticsSource="wallet_detail"
       />
 
       {snapshotDate && (

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import ArticleReadTracker from "@/components/analytics/ArticleReadTracker";
 import { getAllPosts, getPostBySlug } from "@/lib/blog";
 import type { PostMeta } from "@/lib/blog";
 import { BRAND } from "@/lib/constants";
@@ -241,7 +242,9 @@ export default async function PostPage({ params }: PageProps) {
           {/* ── Article body ── */}
           {/* prose-lg: 18px base, 1.75 line-height baseline (we override to 1.85 in config) */}
           {/* max-w-none: width is controlled by the parent container, not prose itself */}
+          <ArticleReadTracker slug={post.slug} />
           <article
+            data-ga-article={post.slug}
             className="prose prose-lg max-w-none"
             dangerouslySetInnerHTML={{ __html: post.content }}
           />

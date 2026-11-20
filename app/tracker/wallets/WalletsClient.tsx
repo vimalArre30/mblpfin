@@ -79,6 +79,8 @@ function WalletCard({
     >
       <Link
         href={`/tracker/wallets/${wallet.id}`}
+        data-ga="wallet_card_click"
+        data-ga-wallet-id={wallet.id}
         className="block bg-white/5 border border-white/10 rounded-xl p-5 transition-colors hover:bg-white/[0.08]"
         style={{ borderLeft: `4px solid ${accent}` }}
       >
@@ -177,7 +179,7 @@ export default function WalletsClient({
             </p>
           </div>
           <button
-            onClick={() => setShowModal(true)}
+            data-ga="new_wallet_click" data-ga-cta-location="wallets" onClick={() => setShowModal(true)}
             className="flex-shrink-0 flex items-center gap-1.5 bg-white text-navy-dark text-sm font-semibold rounded-xl px-5 py-2.5 hover:bg-white/90 transition"
           >
             <span className="text-base leading-none">+</span> New Wallet
@@ -195,7 +197,7 @@ export default function WalletsClient({
               Create your first wallet to start tracking where your money lives.
             </p>
             <button
-              onClick={() => setShowModal(true)}
+              data-ga="new_wallet_click" data-ga-cta-location="wallets" onClick={() => setShowModal(true)}
               className="bg-white text-navy-dark text-sm font-semibold rounded-xl px-6 py-2.5 hover:bg-white/90 transition"
             >
               + New Wallet
@@ -235,7 +237,7 @@ export default function WalletsClient({
 
       {/* FAB */}
       <button
-        onClick={() => setShowAddEntry(true)}
+        data-ga="add_entry_click" data-ga-cta-location="wallets" onClick={() => setShowAddEntry(true)}
         className="sm:hidden fixed bottom-6 right-5 z-40 flex items-center gap-2 bg-white text-navy-dark font-semibold text-sm rounded-2xl px-5 py-3 shadow-lg shadow-black/40 hover:bg-white/90 transition"
         aria-label="Add Entry"
       >
