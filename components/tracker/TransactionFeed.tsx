@@ -7,6 +7,7 @@ import type { Wallet } from "./CreateWalletModal";
 import AddEntryModal, { type EditableTransaction } from "./AddEntryModal";
 import TransactionDetail from "./TransactionDetail";
 import ConfirmDeleteDialog from "./ConfirmDeleteDialog";
+import { notifyTrackerChanged } from "@/lib/tracker/changed";
 import { track } from "@/lib/analytics/track";
 
 export interface Transaction {
@@ -109,6 +110,7 @@ export default function TransactionFeed({
     }
     setSwipedId(null);
     router.refresh();
+    notifyTrackerChanged();
   }
 
   if (transactions.length === 0) {

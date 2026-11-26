@@ -9,6 +9,7 @@ import CategoryPickerSheet from "./CategoryPickerSheet";
 import LabelPickerSheet from "./LabelPickerSheet";
 import UpgradeModal from "./UpgradeModal";
 import { todayLocalISO } from "@/lib/tracker/dates";
+import { notifyTrackerChanged } from "@/lib/tracker/changed";
 import { amountBucket, track } from "@/lib/analytics/track";
 
 type Category = { id: string; name: string; icon: string | null; type?: string | null };
@@ -291,6 +292,7 @@ export default function AddEntryModal({
       }
 
       router.refresh();
+      notifyTrackerChanged();
       onCreated();
       return;
     }
@@ -321,6 +323,7 @@ export default function AddEntryModal({
         amount_bucket: amountBucket(parsedAmount),
       });
       router.refresh();
+      notifyTrackerChanged();
       onCreated();
       return;
     }
@@ -360,6 +363,7 @@ export default function AddEntryModal({
       amount_bucket: amountBucket(parsedAmount),
     });
     router.refresh();
+    notifyTrackerChanged();
     onCreated();
   }
 

@@ -17,20 +17,9 @@ export default async function TransactionsPage() {
 
   if (!user) redirect("/tracker/login");
 
-  const [{ data: wallets }, { data: transactions }] = await Promise.all([
-    supabase.from("wallets").select("*").order("created_at"),
-    supabase
-      .from("transactions")
-      .select("*, categories(name), wallet:wallets!transactions_wallet_id_fkey(name, emoji, color), transaction_labels(label_id, labels(name)), recurring_id")
-      .order("date", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(50),
-  ]);
+  // The list itself is fetched (50 at a time) by the client from
+  // /api/tracker/transactions once the period is known.
+  const { data: wallets } = await supabase.from("wallets").select("*").order("created_at");
 
-  return (
-    <TransactionsClient
-      initialTransactions={transactions ?? []}
-      wallets={wallets ?? []}
-    />
-  );
+  return <TransactionsClient wallets={wallets ?? []} />;
 }

@@ -1,13 +1,17 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Transaction } from "@/components/tracker/TransactionFeed";
 import TransactionFeed from "@/components/tracker/TransactionFeed";
 import PeriodFilter from "@/components/tracker/PeriodFilter";
+import LoadMoreFooter from "@/components/tracker/LoadMoreFooter";
 import WalletSnapshotPanel from "@/components/tracker/WalletSnapshotPanel";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
 import { toLocalISO } from "@/lib/tracker/dates";
+import { fetchTotals } from "@/lib/tracker/totals-client";
+import type { TotalsResponse } from "@/lib/tracker/totals-types";
+import { usePagedTransactions } from "@/lib/tracker/usePagedTransactions";
+import { useTrackerChanged } from "@/lib/tracker/changed";
 
 type CategoryPill = {
   key: string; // category_id uuid | "transfer"
@@ -20,12 +24,12 @@ function fmt(n: number) {
 }
 
 export default function WalletDetailFilter({
-  transactions,
+  walletId,
   wallets,
   accent,
   walletName,
 }: {
-  transactions: Transaction[];
+  walletId: string;
   wallets: Wallet[];
   accent: string;
   walletName: string;
@@ -70,47 +74,26 @@ export default function WalletDetailFilter({
         const token = session.data.session?.access_token;
         if (!token) return;
 
-        // Compute wallet-scoped period summary from already-loaded transactions
-        let totalExp = 0;
-        let totalIncome = 0;
-        let needTotal = 0;
-        let wantTotal = 0;
-        const catTotals: Record<string, number> = {};
-
-        for (const tx of transactions) {
-          if (tx.is_opening_balance) continue;
-          if (tx.date < start || tx.date > end) continue;
-          const entryType =
-            tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
-          const amt = Math.abs(Number(tx.amount));
-
-          if (entryType === "income") {
-            totalIncome += amt;
-            continue;
-          }
-          if (entryType !== "expense") continue;
-
-          totalExp += amt;
-          const catName = tx.categories?.name ?? "Uncategorised";
-          catTotals[catName] = (catTotals[catName] ?? 0) + amt;
-
-          const labelNames = (tx.transaction_labels ?? [])
-            .map((tl) => tl.labels?.name)
-            .filter((n): n is string => Boolean(n));
-          if (labelNames.includes("Need")) needTotal += amt;
-          if (labelNames.includes("Want")) wantTotal += amt;
-        }
+        // Wallet-scoped period summary, computed in SQL (opening balance excluded).
+        const t = await fetchTotals({
+          from: start,
+          to: end,
+          walletId,
+          excludeOpening: true,
+          include: ["by_category", "labels"],
+        });
+        const labelTotal = (n: string) => t.labels?.find((l) => l.name === n)?.total ?? 0;
 
         const summary = {
           period: label,
-          totalIncome,
-          totalExpense: totalExp,
-          needTotal,
-          wantTotal,
-          topCategories: Object.entries(catTotals)
-            .sort(([, a], [, b]) => b - a)
-            .slice(0, 5)
-            .map(([name, total]) => ({ name, total })),
+          totalIncome: t.income,
+          totalExpense: t.expense,
+          needTotal: labelTotal("Need"),
+          wantTotal: labelTotal("Want"),
+          topCategories: (t.by_category ?? []).slice(0, 5).map((c) => ({
+            name: c.name,
+            total: c.total,
+          })),
         };
 
         const res = await fetch("/api/tracker/insights", {
@@ -137,94 +120,81 @@ export default function WalletDetailFilter({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [walletName]
+    [walletName, walletId]
   );
 
-  // Opening balance rows — always shown regardless of period or category filter
-  const openingBalanceTx = useMemo(
-    () => transactions.filter((tx) => tx.is_opening_balance),
-    [transactions]
+  // ── Figures for the selected period, all computed in SQL ──────────────
+  const [refreshKey, setRefreshKey] = useState(0);
+  useTrackerChanged(() => setRefreshKey((k) => k + 1));
+
+  // Net for the period (opening balance included when its date is in the period)
+  const [periodSummary, setPeriodSummary] = useState<TotalsResponse | null>(null);
+  // Category pills + non-opening entry count for the period
+  const [pillTotals, setPillTotals] = useState<TotalsResponse | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      fetchTotals({ from: periodStart, to: periodEnd, walletId }),
+      fetchTotals({
+        from: periodStart,
+        to: periodEnd,
+        walletId,
+        excludeOpening: true,
+        include: ["by_category"],
+        categoryTypes: ["expense", "income"],
+      }),
+    ])
+      .then(([a, b]) => {
+        if (cancelled) return;
+        setPeriodSummary(a);
+        setPillTotals(b);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPeriodSummary(null);
+        setPillTotals(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [periodStart, periodEnd, walletId, refreshKey]);
+
+  const periodNet = periodSummary?.balance ?? 0;
+  const totalCount = pillTotals?.entries ?? 0;
+  const pills = useMemo(() => {
+    const out: CategoryPill[] = (pillTotals?.by_category ?? [])
+      .filter((c) => c.category_id !== null)
+      .map((c) => ({ key: c.category_id as string, name: c.name, total: c.total }));
+    const transferTotal = (pillTotals?.transfers_in ?? 0) + (pillTotals?.transfers_out ?? 0);
+    if (transferTotal > 0) out.push({ key: "transfer", name: "Transfers", total: transferTotal });
+    return out;
+  }, [pillTotals]);
+
+  // ── The list: keyset-paged, 50 at a time ──────────────────────────────
+  const listFilters = useMemo(
+    () => ({
+      from: periodStart,
+      to: periodEnd,
+      walletId,
+      categoryId: selected && selected !== "transfer" ? selected : null,
+      entryType: selected === "transfer" ? ("transfer" as const) : null,
+      opening: "exclude" as const,
+    }),
+    [periodStart, periodEnd, walletId, selected]
   );
+  const feed = usePagedTransactions(listFilters);
 
-  // Period-filtered non-opening-balance transactions
-  const periodTx = useMemo(
-    () => transactions.filter((tx) => !tx.is_opening_balance && tx.date >= periodStart && tx.date <= periodEnd),
-    [transactions, periodStart, periodEnd]
+  // Opening-balance row(s): always shown, never filtered by period or category.
+  const openingFilters = useMemo(
+    () => ({ walletId, opening: "only" as const }),
+    [walletId]
   );
+  const opening = usePagedTransactions(openingFilters);
 
-  // This-period net (income - expense, transfers included directionally)
-  // Include opening balance if its date falls within the period
-  const periodNet = useMemo(() => {
-    let net = 0;
-    const allPeriod = [
-      ...periodTx,
-      ...openingBalanceTx.filter((tx) => tx.date >= periodStart && tx.date <= periodEnd),
-    ];
-    for (const tx of allPeriod) {
-      const raw = Number(tx.amount);
-      const abs = Math.abs(raw);
-      const et = tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
-      if (et === "income" || tx.is_opening_balance) net += abs;
-      else if (et === "expense") net -= abs;
-      else if (et === "transfer") net += raw;
-    }
-    return net;
-  }, [periodTx, openingBalanceTx, periodStart, periodEnd]);
-
-  const { pills, totalCount } = useMemo(() => {
-    const catMap = new Map<string, CategoryPill>();
-    let transferTotal = 0;
-    let hasTransfer = false;
-    let count = 0;
-
-    for (const tx of periodTx) {
-      if (tx.is_opening_balance) continue;
-      count++;
-
-      const entryType =
-        tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
-      const abs = Math.abs(Number(tx.amount));
-
-      if (entryType === "transfer") {
-        transferTotal += abs;
-        hasTransfer = true;
-      } else if (tx.category_id && tx.categories?.name) {
-        const existing = catMap.get(tx.category_id);
-        if (existing) {
-          existing.total += abs;
-        } else {
-          catMap.set(tx.category_id, {
-            key: tx.category_id,
-            name: tx.categories.name,
-            total: abs,
-          });
-        }
-      }
-    }
-
-    const pills: CategoryPill[] = Array.from(catMap.values()).sort(
-      (a, b) => b.total - a.total
-    );
-
-    if (hasTransfer) {
-      pills.push({ key: "transfer", name: "Transfers", total: transferTotal });
-    }
-
-    return { pills, totalCount: count };
-  }, [periodTx]);
-
-  const filtered = useMemo(() => {
-    const base = selected
-      ? periodTx.filter((tx) => {
-          const entryType =
-            tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
-          if (selected === "transfer") return entryType === "transfer";
-          return tx.category_id === selected;
-        })
-      : periodTx;
-    // Opening balance always appended — never filtered out by period or category
-    return [...base, ...openingBalanceTx];
-  }, [periodTx, selected, openingBalanceTx]);
+  const filtered = useMemo(
+    () => (feed.hasMore ? feed.rows : [...feed.rows, ...opening.rows]),
+    [feed.rows, feed.hasMore, opening.rows]
+  );
 
   function fmtAmount(n: number) {
     return `₹${n.toLocaleString("en-IN", {
@@ -297,17 +267,32 @@ export default function WalletDetailFilter({
         </div>
       )}
 
-      <TransactionFeed
-        transactions={filtered}
-        wallets={wallets}
-        onSnapshotDate={setSnapshotDate}
-        analyticsSource="wallet_detail"
+      {feed.loading ? (
+        <div className="space-y-2">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="animate-pulse bg-white/5 border border-white/8 rounded-xl h-14" />
+          ))}
+        </div>
+      ) : (
+        <TransactionFeed
+          transactions={filtered}
+          wallets={wallets}
+          onSnapshotDate={setSnapshotDate}
+          analyticsSource="wallet_detail"
+        />
+      )}
+      <LoadMoreFooter
+        shown={feed.rows.length}
+        total={feed.total}
+        hasMore={feed.hasMore}
+        loading={feed.loadingMore}
+        onLoadMore={feed.loadMore}
       />
 
       {snapshotDate && (
         <WalletSnapshotPanel
           date={snapshotDate}
-          transactions={transactions}
+          walletId={walletId}
           onClose={() => setSnapshotDate(null)}
         />
       )}

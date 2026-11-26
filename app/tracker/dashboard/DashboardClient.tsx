@@ -7,21 +7,24 @@ import StatCards from "@/components/tracker/StatCards";
 import SpendByCategory, { type CategorySpend } from "@/components/tracker/SpendByCategory";
 import MonthlyChart, { type MonthlyDataPoint } from "@/components/tracker/MonthlyChart";
 import NeedWantRatio, { type NeedWantData } from "@/components/tracker/NeedWantRatio";
-import TransactionFeed, { type Transaction } from "@/components/tracker/TransactionFeed";
+import TransactionFeed from "@/components/tracker/TransactionFeed";
+import LoadMoreFooter from "@/components/tracker/LoadMoreFooter";
 import PeriodFilter from "@/components/tracker/PeriodFilter";
 import EntryCountPill from "@/components/tracker/EntryCountPill";
 import ExpiredBanner from "@/components/tracker/ExpiredBanner";
 import HaltedBanner from "@/components/tracker/HaltedBanner";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
 import { toLocalISO } from "@/lib/tracker/dates";
+import { useTrackerChanged } from "@/lib/tracker/changed";
+import { fetchTotals } from "@/lib/tracker/totals-client";
+import { usePagedTransactions } from "@/lib/tracker/usePagedTransactions";
+import type { TotalsResponse } from "@/lib/tracker/totals-types";
 import { track } from "@/lib/analytics/track";
 
 interface Props {
   stats: { totalIncome: number; totalExpense: number; netBalance: number; walletCount: number };
-  chartData: CategorySpend[];
   monthlyData: MonthlyDataPoint[];
   needWant: NeedWantData;
-  transactions: Transaction[];
   wallets: Wallet[];
   paywall: {
     entryCount: number;
@@ -40,7 +43,6 @@ export default function DashboardClient({
   stats,
   monthlyData,
   needWant,
-  transactions,
   wallets,
   paywall,
 }: Props) {
@@ -82,61 +84,66 @@ export default function DashboardClient({
     setPeriodLabel(label);
   }, []);
 
-  // All-time, wallet-filtered (for StatCards)
-  const walletFiltered = useMemo(
+  // Bumped after any add/edit/delete so client-fetched figures and the feed reload.
+  const [refreshKey, setRefreshKey] = useState(0);
+  useTrackerChanged(() => setRefreshKey((k) => k + 1));
+
+  // All-time stat cards. "All wallets" comes from the server render (props.stats);
+  // a single wallet is fetched from /api/tracker/totals. Computed in SQL.
+  const [walletAllTime, setWalletAllTime] = useState<TotalsResponse | null>(null);
+  useEffect(() => {
+    if (selectedWalletId === "all") return;
+    let cancelled = false;
+    fetchTotals({ walletId: selectedWalletId })
+      .then((t) => { if (!cancelled) setWalletAllTime(t); })
+      .catch(() => { if (!cancelled) setWalletAllTime(null); });
+    return () => { cancelled = true; };
+  }, [selectedWalletId, refreshKey]);
+
+  const filteredStats =
+    selectedWalletId === "all"
+      ? { totalIncome: stats.totalIncome, totalExpense: stats.totalExpense, netBalance: stats.netBalance }
+      : {
+          totalIncome: walletAllTime?.income ?? 0,
+          totalExpense: walletAllTime?.expense ?? 0,
+          netBalance: walletAllTime?.net ?? 0,
+        };
+
+  // Period (+ wallet) figures and the category chart, also from SQL.
+  const [periodTotals, setPeriodTotals] = useState<TotalsResponse | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetchTotals({
+      from: periodStart,
+      to: periodEnd,
+      walletId: selectedWalletId === "all" ? null : selectedWalletId,
+      include: ["by_category"],
+      categoryTop: 6,
+    })
+      .then((t) => { if (!cancelled) setPeriodTotals(t); })
+      .catch(() => { if (!cancelled) setPeriodTotals(null); });
+    return () => { cancelled = true; };
+  }, [periodStart, periodEnd, selectedWalletId, refreshKey]);
+
+  const periodStats = { income: periodTotals?.income ?? 0, expense: periodTotals?.expense ?? 0 };
+  const periodChartData = useMemo<CategorySpend[]>(
     () =>
-      selectedWalletId === "all"
-        ? transactions
-        : transactions.filter((t) => t.wallet_id === selectedWalletId),
-    [transactions, selectedWalletId]
+      (periodTotals?.by_category ?? [])
+        .filter((c) => c.category_id !== null)
+        .map((c) => ({ name: c.name, total: c.total })),
+    [periodTotals]
   );
 
-  const filteredStats = useMemo(() => {
-    let totalIncome = 0;
-    let totalExpense = 0;
-    for (const tx of walletFiltered) {
-      const amount = Number(tx.amount);
-      const entryType = tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
-      if (entryType === "transfer") continue;
-      if (entryType === "income") { totalIncome += Math.abs(amount); continue; }
-      totalExpense += Math.abs(amount);
-    }
-    return { totalIncome, totalExpense, netBalance: totalIncome - totalExpense };
-  }, [walletFiltered]);
-
-  // Period + wallet filtered (for feed, chart, period stats)
-  const periodFiltered = useMemo(
-    () => walletFiltered.filter((tx) => tx.date >= periodStart && tx.date <= periodEnd),
-    [walletFiltered, periodStart, periodEnd]
+  // Period + wallet feed, keyset-paged 50 at a time.
+  const feedFilters = useMemo(
+    () => ({
+      from: periodStart,
+      to: periodEnd,
+      walletId: selectedWalletId === "all" ? null : selectedWalletId,
+    }),
+    [periodStart, periodEnd, selectedWalletId]
   );
-
-  const periodStats = useMemo(() => {
-    let income = 0;
-    let expense = 0;
-    for (const tx of periodFiltered) {
-      const et = tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
-      if (et === "transfer") continue;
-      if (et === "income") income += Math.abs(Number(tx.amount));
-      else expense += Math.abs(Number(tx.amount));
-    }
-    return { income, expense };
-  }, [periodFiltered]);
-
-  const periodChartData = useMemo<CategorySpend[]>(() => {
-    const totals: Record<string, { name: string; total: number }> = {};
-    for (const tx of periodFiltered) {
-      const et = tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
-      if (et !== "expense") continue;
-      if (tx.categories?.name) {
-        const n = tx.categories.name;
-        if (!totals[n]) totals[n] = { name: n, total: 0 };
-        totals[n].total += Math.abs(Number(tx.amount));
-      }
-    }
-    return Object.values(totals)
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 6);
-  }, [periodFiltered]);
+  const feed = usePagedTransactions(feedFilters);
 
   function handleCreated() {
     setShowModal(false);
@@ -233,7 +240,26 @@ export default function DashboardClient({
               <span className="text-base leading-none">+</span> Add Entry
             </button>
           </div>
-          <TransactionFeed transactions={periodFiltered} wallets={wallets} analyticsSource="dashboard_feed" />
+          {feed.loading ? (
+            <div className="space-y-2">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="animate-pulse bg-white/5 border border-white/8 rounded-xl h-14" />
+              ))}
+            </div>
+          ) : (
+          <TransactionFeed
+            transactions={feed.rows}
+            wallets={wallets}
+            analyticsSource="dashboard_feed"
+          />
+          )}
+          <LoadMoreFooter
+            shown={feed.rows.length}
+            total={feed.total}
+            hasMore={feed.hasMore}
+            loading={feed.loadingMore}
+            onLoadMore={feed.loadMore}
+          />
         </section>
       </main>
 

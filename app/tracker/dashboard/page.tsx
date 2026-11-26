@@ -1,13 +1,11 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import DashboardClient from "./DashboardClient";
-import type { CategorySpend } from "@/components/tracker/SpendByCategory";
 import type { MonthlyDataPoint } from "@/components/tracker/MonthlyChart";
 import type { NeedWantData } from "@/components/tracker/NeedWantRatio";
-import type { Transaction } from "@/components/tracker/TransactionFeed";
 import { getUserPlan, isProActive, isOnboarded } from "@/lib/tracker/plan";
-import { toLocalISO } from "@/lib/tracker/dates";
-import { fetchAllRows } from "@/lib/tracker/fetch-all";
+import { getTotals } from "@/lib/tracker/totals";
+import { monthLabel } from "@/lib/tracker/totals-client";
 
 export const dynamic = "force-dynamic";
 
@@ -45,116 +43,35 @@ export default async function DashboardPage() {
     !proActive &&
     !isHalted;
 
-  // Fetch transactions with joined data (including destination wallet for transfers)
-  // Paged: PostgREST caps a single response at 1000 rows without any error,
-  // which silently under-counted every total for accounts past 1000 entries.
-  const { data: rawTransactions, error: txError } = await fetchAllRows<Transaction>(
-    (from, to) =>
-      supabase
-        .from("transactions")
-        .select(
-          `
-      *,
-      wallet:wallets!transactions_wallet_id_fkey(name, emoji, color),
-      categories(name),
-      transaction_labels(label_id, labels(name))
-    `
-        )
-        .order("date", { ascending: false })
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: false })
-        .range(from, to) as unknown as PromiseLike<{
-        data: Transaction[] | null;
-        error: { message: string } | null;
-      }>
-  );
-  // Fail loudly rather than render totals computed from a partial list.
-  if (txError) throw new Error(`Failed to load transactions: ${txError.message}`);
-
-  const transactions: Transaction[] = rawTransactions;
-
   // Fetch wallets for AddEntryModal + transfer destination lookup
   const { data: wallets } = await supabase
     .from("wallets")
     .select("id, name, emoji, color, created_at")
     .order("created_at", { ascending: true });
 
-  // --- Compute stats ---
-  const now = new Date();
+  // All-time stat cards, the 6-month chart and Need/Want come from SQL
+  // (migration 008). The browser never sums transactions; if the totals can't
+  // be computed we fail loudly rather than render partial numbers.
+  const totals = await getTotals(supabase, { include: ["labels", "monthly"], monthly: "last6" });
 
-  let totalIncome = 0;
-  let totalExpense = 0;
-  let needTotal = 0;
-  let wantTotal = 0;
+  const monthlyData: MonthlyDataPoint[] = (totals.monthly ?? [])
+    .filter((m) => m.expense > 0)
+    .map((m) => ({ month: monthLabel(m.month), total: m.expense }));
 
-  const categoryTotals: Record<string, { name: string; total: number }> = {};
-  const monthlyMap: Record<string, { month: string; total: number }> = {};
-
-  // Six months ago, first day
-  const sixMonthsAgo = toLocalISO(
-    new Date(now.getFullYear(), now.getMonth() - 5, 1)
-  );
-
-  for (const tx of transactions) {
-    const amount = Number(tx.amount);
-    const entryType = tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
-
-    // Skip transfers entirely — they don't count toward income or expense
-    if (entryType === "transfer") continue;
-
-    if (entryType === "income") {
-      totalIncome += Math.abs(amount);
-      continue;
-    }
-
-    // Expense
-    totalExpense += Math.abs(amount);
-
-    // Category totals (expenses only)
-    if (tx.categories?.name) {
-      const n = tx.categories.name;
-      if (!categoryTotals[n]) categoryTotals[n] = { name: n, total: 0 };
-      categoryTotals[n].total += Math.abs(amount);
-    }
-
-    // Monthly totals — last 6 months (expenses only)
-    if (tx.date >= sixMonthsAgo) {
-      const d = new Date(tx.date + "T00:00:00");
-      const sortKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const month = d.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
-      if (!monthlyMap[sortKey]) monthlyMap[sortKey] = { month, total: 0 };
-      monthlyMap[sortKey].total += Math.abs(amount);
-    }
-
-    // Need vs Want (expenses only)
-    const labelNames =
-      tx.transaction_labels
-        ?.map((tl) => tl.labels?.name)
-        .filter((n): n is string => Boolean(n)) ?? [];
-    if (labelNames.includes("Need")) needTotal += Math.abs(amount);
-    if (labelNames.includes("Want")) wantTotal += Math.abs(amount);
-  }
-
-  const netBalance = totalIncome - totalExpense;
-
-  const chartData: CategorySpend[] = Object.values(categoryTotals)
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 6);
-
-  const monthlyData: MonthlyDataPoint[] = Object.entries(monthlyMap)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([, v]) => v);
-
-  const needWant: NeedWantData = { needTotal, wantTotal };
+  const labelTotal = (n: string) => totals.labels?.find((l) => l.name === n)?.total ?? 0;
+  const needWant: NeedWantData = { needTotal: labelTotal("Need"), wantTotal: labelTotal("Want") };
   const walletCount = wallets?.length ?? 0;
 
   return (
     <DashboardClient
-      stats={{ totalIncome, totalExpense, netBalance, walletCount }}
-      chartData={chartData}
+      stats={{
+        totalIncome: totals.income,
+        totalExpense: totals.expense,
+        netBalance: totals.net,
+        walletCount,
+      }}
       monthlyData={monthlyData}
       needWant={needWant}
-      transactions={transactions}
       wallets={wallets ?? []}
       paywall={{
         entryCount: profile?.entry_count ?? 0,

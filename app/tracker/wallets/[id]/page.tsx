@@ -3,8 +3,7 @@ export const dynamic = "force-dynamic";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { fetchAllRows } from "@/lib/tracker/fetch-all";
-import type { Transaction } from "@/components/tracker/TransactionFeed";
+import { getTotals } from "@/lib/tracker/totals";
 import WalletDetailFAB from "./WalletDetailFAB";
 import WalletDetailFilter from "./WalletDetailFilter";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
@@ -23,71 +22,26 @@ export default async function WalletDetailPage({
 
   if (!user) redirect("/tracker/login");
 
-  const [{ data: wallet }, { data: rawTx, error: txError }, { data: allWallets }] =
-    await Promise.all([
-      supabase
-        .from("wallets")
-        .select("id, name, emoji, color")
-        .eq("id", id)
-        .single(),
-      // Paged: a single PostgREST response is capped at 1000 rows silently.
-      fetchAllRows<Transaction>(
-        (from, to) =>
-          supabase
-            .from("transactions")
-            .select(
-              `
-        *,
-        wallet:wallets!transactions_wallet_id_fkey(name, emoji, color),
-        categories(name),
-        transaction_labels(label_id, labels(name))
-      `
-            )
-            .eq("wallet_id", id)
-            .order("date", { ascending: false })
-            .order("created_at", { ascending: false })
-            .order("id", { ascending: false })
-            .range(from, to) as unknown as PromiseLike<{
-            data: Transaction[] | null;
-            error: { message: string } | null;
-          }>
-      ),
-      supabase.from("wallets").select("id, name, emoji, color, created_at"),
-    ]);
+  const [{ data: wallet }, { data: allWallets }] = await Promise.all([
+    supabase
+      .from("wallets")
+      .select("id, name, emoji, color")
+      .eq("id", id)
+      .single(),
+    supabase.from("wallets").select("id, name, emoji, color, created_at"),
+  ]);
 
   if (!wallet) notFound();
-  // Fail loudly rather than show balances computed from a partial list.
-  if (txError) throw new Error(`Failed to load wallet transactions: ${txError.message}`);
 
-  const transactions: Transaction[] = rawTx;
-
-  // Compute wallet-level stats using entry_type
-  let totalIn = 0;
-  let totalOut = 0;
-  let transfersIn = 0;
-  let transfersOut = 0;
-
-  for (const tx of transactions) {
-    const raw = Number(tx.amount);
-    const abs = Math.abs(raw);
-    const entryType = tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
-
-    if (entryType === "income" || tx.is_opening_balance) {
-      totalIn += abs;
-    } else if (entryType === "expense") {
-      totalOut += abs;
-    } else if (entryType === "transfer") {
-      if (raw > 0) {
-        // Credit leg — money arrived into this wallet
-        transfersIn += abs;
-      } else {
-        // Debit leg — money left this wallet
-        transfersOut += abs;
-      }
-    }
-  }
-
-  const netBalance = totalIn - totalOut + transfersIn - transfersOut;
+  // All-time wallet figures are computed in SQL (migration 008): income (incl. the
+  // opening balance), expense and the signed transfer legs of THIS wallet. Throws on
+  // failure rather than showing a balance built from partial data.
+  const totals = await getTotals(supabase, { walletId: id });
+  const totalIn = totals.income;
+  const totalOut = totals.expense;
+  const transfersIn = totals.transfers_in;
+  const transfersOut = totals.transfers_out;
+  const netBalance = totals.balance;
 
   const accent = wallet.color ?? "#2563EB";
 
@@ -116,7 +70,7 @@ export default async function WalletDetailPage({
             {wallet.name}
           </h1>
           <p className="text-white/40 text-sm mt-1">
-            {transactions.length} transaction{transactions.length !== 1 ? "s" : ""}
+            {totals.entries.toLocaleString("en-IN")} transaction{totals.entries !== 1 ? "s" : ""}
           </p>
         </div>
 
@@ -163,7 +117,7 @@ export default async function WalletDetailPage({
 
         {/* Transactions with category filter */}
         <WalletDetailFilter
-          transactions={transactions}
+          walletId={wallet.id}
           wallets={allWallets ?? []}
           accent={accent}
           walletName={wallet.name}

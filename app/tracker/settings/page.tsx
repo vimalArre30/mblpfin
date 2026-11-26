@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getUserPlan } from "@/lib/tracker/plan";
+import { getUserPlan, isProActive } from "@/lib/tracker/plan";
 import SettingsClient from "./SettingsClient";
 import ProfileSection from "./ProfileSection";
+import ExportSection from "@/components/tracker/ExportSection";
 
 export const metadata = {
   title: "Settings — MBL PFin",
@@ -17,7 +18,7 @@ export default async function SettingsPage() {
 
   if (!user) redirect("/tracker/login");
 
-  const [profile, { data: categories }, { data: labels }] = await Promise.all([
+  const [profile, { data: categories }, { data: labels }, { data: wallets }] = await Promise.all([
     getUserPlan(supabase, user.id),
     supabase
       .from("categories")
@@ -27,6 +28,10 @@ export default async function SettingsPage() {
       .from("labels")
       .select("id, name, color, user_id")
       .order("name", { ascending: true }),
+    supabase
+      .from("wallets")
+      .select("id, name, emoji")
+      .order("created_at", { ascending: true }),
   ]);
 
   return (
@@ -43,6 +48,11 @@ export default async function SettingsPage() {
       <ProfileSection
         initialName={profile?.name ?? ""}
         initialUsername={profile?.username ?? ""}
+      />
+
+      <ExportSection
+        isPro={!!profile && isProActive(profile)}
+        wallets={wallets ?? []}
       />
 
       <SettingsClient
