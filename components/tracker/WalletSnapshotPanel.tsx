@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { Transaction } from "./TransactionFeed";
+import { useEffect, useRef, useState } from "react";
+import { fetchTotals } from "@/lib/tracker/totals-client";
 
 function fmt(n: number) {
   return `₹${n.toLocaleString("en-IN", {
@@ -38,11 +38,11 @@ function StatRow({
 
 export default function WalletSnapshotPanel({
   date,
-  transactions,
+  walletId,
   onClose,
 }: {
   date: string;
-  transactions: Transaction[];
+  walletId: string;
   onClose: () => void;
 }) {
   const [visible, setVisible] = useState(false);
@@ -116,33 +116,33 @@ export default function WalletSnapshotPanel({
     setTimeout(onClose, 250);
   }
 
-  // Cumulative snapshot: all transactions for this wallet where date <= snapshotDate
-  const stats = useMemo(() => {
-    let totalIn = 0;
-    let totalOut = 0;
-    let transfersIn = 0;
-    let transfersOut = 0;
-
-    for (const tx of transactions) {
-      if (tx.date > date) continue;
-
-      const raw = Number(tx.amount);
-      const abs = Math.abs(raw);
-      const et = tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
-
-      if (et === "income" || tx.is_opening_balance) {
-        totalIn += abs;
-      } else if (et === "expense") {
-        totalOut += abs;
-      } else if (et === "transfer") {
-        if (raw > 0) transfersIn += abs;
-        else transfersOut += abs;
-      }
-    }
-
-    const net = totalIn - totalOut + transfersIn - transfersOut;
-    return { totalIn, totalOut, transfersIn, transfersOut, net };
-  }, [transactions, date]);
+  // Cumulative snapshot: this wallet, every entry dated on or before `date`.
+  // Computed in SQL (totals_for_period with an upper bound only).
+  const [stats, setStats] = useState({
+    totalIn: 0,
+    totalOut: 0,
+    transfersIn: 0,
+    transfersOut: 0,
+    net: 0,
+  });
+  useEffect(() => {
+    let cancelled = false;
+    fetchTotals({ to: date, walletId })
+      .then((t) => {
+        if (cancelled) return;
+        setStats({
+          totalIn: t.income,
+          totalOut: t.expense,
+          transfersIn: t.transfers_in,
+          transfersOut: t.transfers_out,
+          net: t.balance,
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [date, walletId]);
 
   const sheetStyle =
     dragYState > 0 ? { transform: `translateY(${dragYState}px)` } : undefined;

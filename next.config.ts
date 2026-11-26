@@ -4,6 +4,12 @@ const nextConfig: NextConfig = {
   images: {
     domains: ["img.youtube.com"],
   },
+  // react-pdf runs server-side only; keep it out of the bundle and make sure the
+  // bundled Inter fonts are traced into the PDF route's serverless function.
+  serverExternalPackages: ["@react-pdf/renderer"],
+  outputFileTracingIncludes: {
+    "/api/tracker/export/pdf": ["./lib/pdf/fonts/**/*", "./public/brand/**/*"],
+  },
   experimental: {
     staleTimes: {
       dynamic: 0, // never serve stale RSC payload for dynamic routes

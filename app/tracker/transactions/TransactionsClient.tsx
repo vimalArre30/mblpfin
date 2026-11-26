@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import AddEntryModal from "@/components/tracker/AddEntryModal";
-import TransactionFeed, { type Transaction } from "@/components/tracker/TransactionFeed";
+import TransactionFeed from "@/components/tracker/TransactionFeed";
 import PeriodFilter from "@/components/tracker/PeriodFilter";
-import { fetchAllRows } from "@/lib/tracker/fetch-all";
+import LoadMoreFooter from "@/components/tracker/LoadMoreFooter";
+import { usePagedTransactions } from "@/lib/tracker/usePagedTransactions";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
 import RecurringSection from "./RecurringSection";
 
@@ -24,54 +24,33 @@ function SkeletonRow() {
 
 type Tab = "transactions" | "recurring";
 
-export default function TransactionsClient({
-  initialTransactions,
-  wallets,
-}: {
-  initialTransactions: Transaction[];
-  wallets: Wallet[];
-}) {
+export default function TransactionsClient({ wallets }: { wallets: Wallet[] }) {
   const router = useRouter();
-  const supabase = useRef(createClient()).current;
   const [activeTab, setActiveTab] = useState<Tab>("transactions");
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState(false);
 
-  const [periodTx, setPeriodTx] = useState<Transaction[] | null>(null);
+  const [period, setPeriod] = useState<{ start: string; end: string } | null>(null);
   const [periodLabel, setPeriodLabel] = useState("");
-  const [periodLoading, setPeriodLoading] = useState(true);
 
-  const handlePeriodChange = useCallback(
-    async (start: string, end: string, label: string) => {
-      setPeriodLabel(label);
-      setPeriodLoading(true);
-      // Paged: a single response is silently capped at 1000 rows.
-      const { data } = await fetchAllRows<Transaction>(
-        (from, to) =>
-          supabase
-            .from("transactions")
-            .select(
-              "*, categories(name), wallet:wallets!transactions_wallet_id_fkey(name, emoji, color), transaction_labels(label_id, labels(name)), recurring_id"
-            )
-            .gte("date", start)
-            .lte("date", end)
-            .order("date", { ascending: false })
-            .order("created_at", { ascending: false })
-            .order("id", { ascending: false })
-            .range(from, to) as unknown as PromiseLike<{
-            data: Transaction[] | null;
-            error: { message: string } | null;
-          }>
-      );
-      setPeriodTx(data);
-      setPeriodLoading(false);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+  const handlePeriodChange = useCallback((start: string, end: string, label: string) => {
+    setPeriodLabel(label);
+    setPeriod({ start, end });
+  }, []);
+
+  // Keyset-paged, 50 per page; the count comes from the server, not from rows.length.
+  const filters = useMemo(
+    () => (period ? { from: period.start, to: period.end } : null),
+    [period]
   );
-
-  // While the first fetch hasn't completed yet, fall back to the server-provided list
-  const transactions = periodTx ?? initialTransactions;
+  const {
+    rows: transactions,
+    total,
+    hasMore,
+    loading: periodLoading,
+    loadingMore,
+    loadMore,
+  } = usePagedTransactions(filters);
 
   function handleCreated() {
     setShowModal(false);
@@ -107,9 +86,9 @@ export default function TransactionsClient({
             <h1 className="font-playfair text-3xl font-bold text-white">Transactions</h1>
             {!periodLoading && (
               <p className="mt-1.5 text-white/45 text-sm">
-                {transactions.length === 0
+                {(total ?? transactions.length) === 0
                   ? `No entries in ${periodLabel}`
-                  : `${transactions.length} entr${transactions.length !== 1 ? "ies" : "y"}`}
+                  : `${(total ?? transactions.length).toLocaleString("en-IN")} entr${(total ?? transactions.length) !== 1 ? "ies" : "y"}`}
               </p>
             )}
           </div>
@@ -155,6 +134,13 @@ export default function TransactionsClient({
               {periodLabel}
             </p>
             <TransactionFeed transactions={transactions} wallets={wallets} analyticsSource="transactions_page" />
+            <LoadMoreFooter
+              shown={transactions.length}
+              total={total}
+              hasMore={hasMore}
+              loading={loadingMore}
+              onLoadMore={loadMore}
+            />
           </>
         )}
       </main>

@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useTrackerChanged } from "@/lib/tracker/changed";
+import { fetchTotals, monthLabel } from "@/lib/tracker/totals-client";
+import type { TotalsResponse } from "@/lib/tracker/totals-types";
 import SpendByCategory, {
   type CategorySpend,
 } from "@/components/tracker/SpendByCategory";
@@ -13,19 +16,9 @@ import NeedWantRatio, {
   type NeedWantData,
 } from "@/components/tracker/NeedWantRatio";
 import PeriodFilter from "@/components/tracker/PeriodFilter";
-import { fetchAllRows } from "@/lib/tracker/fetch-all";
 import { track } from "@/lib/analytics/track";
 import AddEntryModal from "@/components/tracker/AddEntryModal";
 import type { Wallet } from "@/components/tracker/CreateWalletModal";
-
-type RawTx = {
-  amount: number;
-  date: string;
-  type: string;
-  entry_type: string | null;
-  categories: { name: string } | null;
-  transaction_labels: { labels: { name: string } | null }[] | null;
-};
 
 function ChartSkeleton() {
   return (
@@ -39,33 +32,31 @@ export default function AnalyticsClient({ wallets }: { wallets: Wallet[] }) {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [periodLabel, setPeriodLabel] = useState("");
-  const [txs, setTxs] = useState<RawTx[]>([]);
+  const [totals, setTotals] = useState<TotalsResponse | null>(null);
   const [insight, setInsight] = useState<string | null>(null);
   const [insightLoading, setInsightLoading] = useState(false);
   const insightFetchedForPeriod = useRef<string | null>(null);
 
+  const lastPeriod = useRef<{ start: string; end: string; label: string } | null>(null);
+
   const handlePeriodChange = useCallback(
     async (start: string, end: string, label: string) => {
+      lastPeriod.current = { start, end, label };
       setPeriodLabel(label);
       setLoading(true);
-      // Paged: a single response is silently capped at 1000 rows.
-      const { data } = await fetchAllRows<RawTx>(
-        (from, to) =>
-          supabase
-            .from("transactions")
-            .select(
-              "amount, date, type, entry_type, categories(name), transaction_labels(labels(name))"
-            )
-            .gte("date", start)
-            .lte("date", end)
-            .order("date", { ascending: false })
-            .order("id", { ascending: false })
-            .range(from, to) as unknown as PromiseLike<{
-            data: RawTx[] | null;
-            error: { message: string } | null;
-          }>
-      );
-      setTxs(data);
+      // All figures are computed in SQL (migration 008); nothing is summed here.
+      let t: TotalsResponse | null = null;
+      try {
+        t = await fetchTotals({
+          from: start,
+          to: end,
+          include: ["by_category", "labels", "monthly"],
+          monthly: "period",
+        });
+      } catch {
+        t = null;
+      }
+      setTotals(t);
       setLoading(false);
 
       if (insightFetchedForPeriod.current !== label) {
@@ -78,25 +69,13 @@ export default function AnalyticsClient({ wallets }: { wallets: Wallet[] }) {
           const token = session.data.session?.access_token;
           if (!token) return;
 
-          let totalExp = 0;
-          const catTotals: Record<string, number> = {};
-          for (const tx of (data ?? []) as unknown as RawTx[]) {
-            const entryType =
-              tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
-            if (entryType !== "expense") continue;
-            const amt = Math.abs(Number(tx.amount));
-            totalExp += amt;
-            const catName = tx.categories?.name ?? "Uncategorised";
-            catTotals[catName] = (catTotals[catName] ?? 0) + amt;
-          }
-
           const summary = {
             period: label,
-            totalExpense: totalExp,
-            topCategories: Object.entries(catTotals)
-              .sort(([, a], [, b]) => b - a)
-              .slice(0, 5)
-              .map(([name, total]) => ({ name, total })),
+            totalExpense: t?.expense ?? 0,
+            topCategories: (t?.by_category ?? []).slice(0, 5).map((c) => ({
+              name: c.name,
+              total: c.total,
+            })),
           };
 
           const res = await fetch("/api/tracker/insights", {
@@ -127,62 +106,39 @@ export default function AnalyticsClient({ wallets }: { wallets: Wallet[] }) {
     []
   );
 
+  // Entry added/edited/deleted from anywhere on the page -> reload this period's figures.
+  useTrackerChanged(() => {
+    const p = lastPeriod.current;
+    if (p) void handlePeriodChange(p.start, p.end, p.label);
+  });
+
   // GA4: the AI insight card rendered
   useEffect(() => {
     if (insight) track("ai_insight_view");
   }, [insight]);
 
   const analytics = useMemo(() => {
-    let totalSpent = 0;
-    let expenseCount = 0;
-    let needTotal = 0;
-    let wantTotal = 0;
-    const categoryTotals: Record<string, { name: string; total: number }> = {};
-    const monthlyMap: Record<string, { month: string; total: number }> = {};
+    const chartData: CategorySpend[] = (totals?.by_category ?? [])
+      .filter((c) => c.category_id !== null)
+      .slice(0, 6)
+      .map((c) => ({ name: c.name, total: c.total }));
 
-    for (const tx of txs) {
-      const entryType =
-        tx.entry_type ?? (tx.type === "credit" ? "income" : "expense");
-      if (entryType !== "expense") continue;
+    const monthlyData: MonthlyDataPoint[] = (totals?.monthly ?? [])
+      .filter((m) => m.expense > 0)
+      .map((m) => ({ month: monthLabel(m.month), total: m.expense }));
 
-      const amount = Math.abs(Number(tx.amount));
-      totalSpent += amount;
-      expenseCount++;
+    const labelTotal = (n: string) =>
+      (totals?.labels ?? []).find((l) => l.name === n)?.total ?? 0;
+    const needWant: NeedWantData = { needTotal: labelTotal("Need"), wantTotal: labelTotal("Want") };
 
-      if (tx.categories?.name) {
-        const n = tx.categories.name;
-        if (!categoryTotals[n]) categoryTotals[n] = { name: n, total: 0 };
-        categoryTotals[n].total += amount;
-      }
-
-      const d = new Date(tx.date + "T00:00:00");
-      const sortKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const month = d.toLocaleDateString("en-IN", {
-        month: "short",
-        year: "numeric",
-      });
-      if (!monthlyMap[sortKey]) monthlyMap[sortKey] = { month, total: 0 };
-      monthlyMap[sortKey].total += amount;
-
-      const labelNames = (tx.transaction_labels ?? [])
-        .map((tl) => tl.labels?.name)
-        .filter((n): n is string => Boolean(n));
-      if (labelNames.includes("Need")) needTotal += amount;
-      if (labelNames.includes("Want")) wantTotal += amount;
-    }
-
-    const chartData: CategorySpend[] = Object.values(categoryTotals)
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 6);
-
-    const monthlyData: MonthlyDataPoint[] = Object.entries(monthlyMap)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([, v]) => v);
-
-    const needWant: NeedWantData = { needTotal, wantTotal };
-
-    return { totalSpent, expenseCount, chartData, monthlyData, needWant };
-  }, [txs]);
+    return {
+      totalSpent: totals?.expense ?? 0,
+      expenseCount: totals?.expense_count ?? 0,
+      chartData,
+      monthlyData,
+      needWant,
+    };
+  }, [totals]);
 
   function handleCreated() {
     setShowModal(false);
