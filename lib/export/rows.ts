@@ -15,6 +15,7 @@ export interface ExportRow {
   description: string | null;
   note: string | null;
   amount: number;
+  wallet_id: string | null;
   entry_type: string | null;
   type: string | null;
   is_opening_balance: boolean | null;
@@ -35,7 +36,7 @@ export function rowKind(r: ExportRow): ExportKind {
 }
 
 const SELECT =
-  "id, date, description, note, amount, entry_type, type, is_opening_balance, recurring_id, source, created_at, categories(name), wallet:wallets!transactions_wallet_id_fkey(name), transaction_labels(labels(name))";
+  "id, date, description, note, amount, wallet_id, entry_type, type, is_opening_balance, recurring_id, source, created_at, categories(name), wallet:wallets!transactions_wallet_id_fkey(name), transaction_labels(labels(name))";
 const SELECT_NO_SOURCE = SELECT.replace(" source,", "");
 const TS_RE = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}(:?\d{2})?)$/;
 
@@ -160,7 +161,7 @@ export async function fetchAllRows(ctx: ExportContext): Promise<ExportRow[]> {
   return out;
 }
 
-export function exportFilename(from: string, to: string, ext: "csv" | "pdf") {
+export function exportFilename(from: string, to: string, ext: "csv" | "pdf" | "xlsx") {
   return `mblpfin-${from}-to-${to}.${ext}`;
 }
 
