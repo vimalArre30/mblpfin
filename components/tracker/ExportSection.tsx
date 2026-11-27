@@ -8,6 +8,18 @@ import { track } from "@/lib/analytics/track";
 
 const MAX_ROWS = 10_000;
 
+type ExportKind = "csv" | "xlsx" | "pdf";
+const LABEL: Record<ExportKind, string> = { csv: "CSV", xlsx: "Excel", pdf: "PDF" };
+type Status = { kind: "working" | "done" | "error"; text: string } | null;
+
+function errorText(status: number, code?: string): string {
+  if (status === 401) return "Your session has expired. Sign in again and retry.";
+  if (status === 403 || code === "pro_required")
+    return "This range needs Pro. Free plans can export the current financial year only.";
+  if (status === 413) return "Too many entries for one file. Choose a shorter range.";
+  return "Couldn't create the file. Please try again.";
+}
+
 type Wallet = { id: string; name: string; emoji?: string | null };
 type RangeKey = "month" | "last_month" | "fy" | "last_fy" | "custom";
 
@@ -45,6 +57,15 @@ export default function ExportSection({ isPro, wallets }: { isPro: boolean; wall
   const [walletId, setWalletId] = useState("");
   const [count, setCount] = useState<number | null>(null);
   const [countError, setCountError] = useState(false);
+  const [busy, setBusy] = useState<ExportKind | null>(null);
+  const [status, setStatus] = useState<Status>(null);
+
+  // The "downloaded" note clears itself after a few seconds; errors stay until the next try.
+  useEffect(() => {
+    if (status?.kind !== "done") return;
+    const t = setTimeout(() => setStatus(null), 6000);
+    return () => clearTimeout(t);
+  }, [status]);
 
   const fyFrom = useMemo(() => toLocalISO(fyStart(new Date())), []);
   const { from, to } = key === "custom" ? { from: customFrom, to: customTo } : rangeFor(key)!;
@@ -71,6 +92,37 @@ export default function ExportSection({ isPro, wallets }: { isPro: boolean; wall
   }, [from, to, walletId, badRange]);
 
   const qs = new URLSearchParams({ from, to, ...(walletId ? { wallet_id: walletId } : {}) }).toString();
+  async function download(kind: ExportKind) {
+    if (!canDownload || busy) return;
+    setBusy(kind);
+    setStatus({ kind: "working", text: `Preparing your ${LABEL[kind]} file… this can take a few seconds.` });
+    try {
+      const res = await fetch(`/api/tracker/export/${kind}?${qs}`, { cache: "no-store" });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(errorText(res.status, body.error));
+      }
+      const blob = await res.blob();
+      const fileName =
+        /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") ?? "")?.[1] ??
+        `mblpfin-${from}-to-${to}.${kind}`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      track("export_downloaded", { kind });
+      setStatus({ kind: "done", text: `${LABEL[kind]} file downloaded: ${fileName}` });
+    } catch (e) {
+      setStatus({ kind: "error", text: e instanceof Error ? e.message : errorText(0) });
+    } finally {
+      setBusy(null);
+    }
+  }
+
   const pill = (k: RangeKey, label: string, proOnly = false) => (
     <button
       key={k}
@@ -91,7 +143,7 @@ export default function ExportSection({ isPro, wallets }: { isPro: boolean; wall
     <section className="mt-8 bg-white/[0.03] border border-white/10 rounded-2xl p-5">
       <h2 className="font-playfair text-lg font-bold text-white">Export</h2>
       <p className="mt-1 text-sm text-white/40">
-        Download your entries as a CSV, or a formatted PDF statement.
+        Download your entries as a CSV, an Excel workbook with charts, or a formatted PDF statement.
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
@@ -164,31 +216,53 @@ export default function ExportSection({ isPro, wallets }: { isPro: boolean; wall
       )}
 
       <div className="mt-4 flex flex-wrap gap-3">
-        <a
-          href={canDownload ? `/api/tracker/export/csv?${qs}` : undefined}
-          download
-          aria-disabled={!canDownload}
-          onClick={() => canDownload && track("export_downloaded", { kind: "csv" })}
-          className={`px-4 py-2 rounded-xl text-sm font-semibold ${
-            canDownload ? "bg-amber-500 text-black" : "bg-white/10 text-white/30 pointer-events-none"
-          }`}
-        >
-          Download CSV
-        </a>
-        <a
-          href={canDownload ? `/api/tracker/export/pdf?${qs}` : undefined}
-          download
-          aria-disabled={!canDownload}
-          onClick={() => canDownload && track("export_downloaded", { kind: "pdf" })}
-          className={`px-4 py-2 rounded-xl text-sm font-semibold border ${
-            canDownload
-              ? "border-amber-500/50 text-amber-300"
-              : "border-white/10 text-white/30 pointer-events-none"
-          }`}
-        >
-          Download PDF
-        </a>
+        {(["csv", "xlsx", "pdf"] as const).map((kind) => {
+          const primary = kind === "csv";
+          const enabled = canDownload && busy === null;
+          return (
+            <button
+              key={kind}
+              type="button"
+              onClick={() => download(kind)}
+              disabled={!enabled}
+              aria-busy={busy === kind}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold ${
+                primary ? "" : "border "
+              }${
+                enabled
+                  ? primary
+                    ? "bg-amber-500 text-black"
+                    : "border-amber-500/50 text-amber-300"
+                  : primary
+                    ? "bg-white/10 text-white/30 cursor-not-allowed"
+                    : "border-white/10 text-white/30 cursor-not-allowed"
+              }`}
+            >
+              {busy === kind ? "Preparing…" : `Download ${LABEL[kind]}`}
+            </button>
+          );
+        })}
       </div>
+
+      {status && (
+        <p
+          role="status"
+          aria-live="polite"
+          className={`mt-3 text-sm flex items-center gap-2 ${
+            status.kind === "error"
+              ? "text-red-400"
+              : status.kind === "done"
+                ? "text-emerald-400"
+                : "text-white/60"
+          }`}
+        >
+          {status.kind === "working" && (
+            <span className="inline-block w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-amber-400 animate-spin" />
+          )}
+          {status.kind === "done" && <span aria-hidden>✓</span>}
+          {status.text}
+        </p>
+      )}
     </section>
   );
 }

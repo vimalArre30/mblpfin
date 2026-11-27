@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   },
   // react-pdf runs server-side only; keep it out of the bundle and make sure the
   // bundled Inter fonts are traced into the PDF route's serverless function.
-  serverExternalPackages: ["@react-pdf/renderer"],
+  serverExternalPackages: ["@react-pdf/renderer", "exceljs"],
   outputFileTracingIncludes: {
     "/api/tracker/export/pdf": ["./lib/pdf/fonts/**/*", "./public/brand/**/*"],
   },
